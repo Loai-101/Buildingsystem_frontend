@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -9,11 +10,19 @@ import { FormField } from '../components/FormField';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import './Login.css';
 
+const LOGIN_BG_IMAGE = 'https://res.cloudinary.com/dvybb2xnc/image/upload/v1771763410/ChatGPT_Image_Feb_22_2026_03_29_04_PM_rij4pe.png';
+
 export function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
   const login = useAuthStore((s) => s.login);
+  const [showForm, setShowForm] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowForm(true), 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const {
     register,
@@ -45,8 +54,8 @@ export function Login() {
   }
 
   return (
-    <div className="login-page">
-      <div className="login-card">
+    <div className="login-page" style={{ backgroundImage: `url(${LOGIN_BG_IMAGE})` }}>
+      <div className={`login-card ${showForm ? 'login-card-visible' : ''}`}>
         <h1 className="login-title">{t('login.title')}</h1>
         <p className="login-subtitle">{t('login.subtitle')}</p>
         <form onSubmit={handleSubmit(onSubmit)} className="login-form" noValidate>
