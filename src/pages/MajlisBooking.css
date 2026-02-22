@@ -1,0 +1,461 @@
+/* Full-page calendar layout */
+.majlis-booking-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.majlis-booking-page .page-content {
+  padding: var(--space-xl);
+  max-width: none;
+  margin: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.majlis-intro {
+  margin: 0 0 var(--space-md);
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  flex-shrink: 0;
+}
+
+.majlis-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr auto;
+  gap: var(--space-xl);
+  min-height: 0;
+}
+
+@media (min-width: 1024px) {
+  .majlis-layout {
+    grid-template-columns: 1fr 340px;
+    grid-template-rows: 1fr;
+    align-items: stretch;
+  }
+}
+
+/* Calendar card: fill available space */
+.majlis-calendar-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 400px;
+  height: 100%;
+  min-width: 0;
+}
+
+.majlis-calendar-card .card-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.majlis-calendar-card .card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: var(--space-md);
+}
+
+.calendar-wrap {
+  flex: 1;
+  min-height: 380px;
+  border-radius: var(--radius);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  -webkit-overflow-scrolling: touch;
+}
+
+.calendar-wrap .fc {
+  flex: 1;
+  min-height: 0;
+}
+
+/* FullCalendar theme overrides */
+.calendar-wrap .fc {
+  --fc-border-color: var(--color-border);
+  --fc-button-bg-color: var(--color-primary);
+  --fc-button-border-color: var(--color-primary);
+  --fc-button-hover-bg-color: var(--color-primary-hover);
+  --fc-button-hover-border-color: var(--color-primary-hover);
+  --fc-today-bg-color: var(--color-primary-subtle);
+  --fc-page-bg-color: var(--color-bg);
+  --fc-neutral-bg-color: var(--color-bg);
+}
+
+.calendar-wrap .fc-theme-standard td,
+.calendar-wrap .fc-theme-standard th {
+  border-color: var(--color-border-light);
+}
+
+.calendar-wrap .fc-col-header-cell-cushion,
+.calendar-wrap .fc-daygrid-day-number {
+  color: var(--color-text);
+}
+
+.calendar-wrap .fc-button {
+  font-weight: 600;
+  border-radius: var(--radius);
+}
+
+.calendar-wrap .fc-event {
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+}
+
+.calendar-wrap .fc-view-harness {
+  flex: 1;
+  min-height: 280px;
+}
+
+/* + button on each day to request booking */
+.calendar-wrap .fc-daygrid-day-top {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.calendar-wrap .fc-day-add-btn {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--color-primary);
+  background: var(--color-primary-subtle);
+  border: 1px solid var(--color-primary-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.calendar-wrap .fc-day-add-btn:hover {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+.calendar-wrap .fc-day-add-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Legend: compact strip below calendar */
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border-light);
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.calendar-legend .legend-item {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-full);
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+/* Admin panel – Booking requests (Admin), same simple list style as Accounts/Maintenance */
+.majlis-admin-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.majlis-admin-card .card-header {
+  flex-shrink: 0;
+}
+
+.majlis-admin-card .card-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.majlis-admin-card .card-body {
+  padding: var(--space-md) 0;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.majlis-admin-card .empty-state {
+  padding: var(--space-xl) var(--space-md);
+  margin: 0;
+  font-size: 0.9375rem;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.pending-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pending-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+  padding: var(--space-md) 0;
+  border-bottom: 1px solid var(--color-border-light);
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+}
+
+.pending-item:last-child {
+  border-bottom: none;
+}
+
+.pending-item > div:first-child {
+  min-width: 0;
+  flex: 1;
+}
+
+.pending-item strong {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-xs);
+}
+
+.pending-item .pending-request-name {
+  display: block;
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 1rem;
+  margin-top: var(--space-xs);
+}
+
+.pending-notes {
+  margin: var(--space-sm) 0 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+  font-weight: normal;
+}
+
+.pending-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.pending-actions .btn {
+  min-width: 80px;
+  min-height: 36px;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+/* View booking info modal */
+.majlis-view-booking {
+  padding: var(--space-sm) 0;
+}
+
+.majlis-view-booking .majlis-view-row {
+  margin: 0 0 var(--space-md);
+  font-size: 0.9375rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.majlis-view-booking .majlis-view-row:last-of-type {
+  margin-bottom: var(--space-lg);
+}
+
+.majlis-view-booking strong {
+  display: inline-block;
+  min-width: 6rem;
+  color: var(--color-text);
+}
+
+/* Frozen date in booking modal – not editable */
+.majlis-date-frozen {
+  background: var(--color-bg-alt) !important;
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.majlis-date-frozen:disabled {
+  opacity: 1;
+}
+
+.modal-actions {
+  display: flex;
+  gap: var(--space-md);
+  margin-top: var(--space-xl);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border-light);
+  justify-content: flex-end;
+}
+
+/* Mobile – calendar compact and visible */
+@media (max-width: 768px) {
+  .majlis-booking-page .page-content {
+    padding: var(--space-md);
+  }
+
+  .majlis-intro {
+    margin-bottom: var(--space-sm);
+    font-size: 0.875rem;
+  }
+
+  .majlis-calendar-card {
+    min-height: 280px;
+  }
+
+  .majlis-calendar-card .card-body {
+    padding: var(--space-sm);
+  }
+
+  .calendar-wrap {
+    min-height: 260px;
+    overflow-x: auto;
+  }
+
+  .calendar-wrap .fc {
+    font-size: 0.75rem;
+  }
+
+  /* Toolbar: prev/next/today + title – compact */
+  .calendar-wrap .fc-toolbar-title {
+    font-size: 1rem !important;
+  }
+
+  .calendar-wrap .fc-button {
+    padding: var(--space-xs) var(--space-sm);
+    font-size: 0.75rem;
+  }
+
+  /* Day column headers (Mon, Tue, …) */
+  .calendar-wrap .fc-col-header-cell-cushion {
+    padding: 2px 4px;
+    font-size: 0.65rem;
+  }
+
+  /* Day cell and number */
+  .calendar-wrap .fc-daygrid-day-frame {
+    min-height: 0;
+  }
+
+  .calendar-wrap .fc-daygrid-day-number {
+    font-size: 0.7rem;
+    padding: 2px 4px;
+  }
+
+  /* + button smaller on mobile */
+  .calendar-wrap .fc-day-add-btn {
+    width: 18px;
+    height: 18px;
+    font-size: 0.875rem;
+  }
+
+  /* Events in cells – compact */
+  .calendar-wrap .fc-event {
+    padding: 1px 4px;
+    font-size: 0.65rem;
+  }
+
+  .calendar-wrap .fc-view-harness {
+    min-height: 220px;
+  }
+
+  .pending-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    padding: var(--space-md) 0;
+  }
+
+  .pending-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .pending-actions .btn {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+  .majlis-booking-page .page-content {
+    padding: var(--space-sm);
+  }
+
+  .majlis-calendar-card .card-body {
+    padding: var(--space-xs);
+  }
+
+  .majlis-calendar-card {
+    min-height: 240px;
+  }
+
+  .calendar-wrap {
+    min-height: 220px;
+  }
+
+  .calendar-wrap .fc-toolbar-title {
+    font-size: 0.875rem !important;
+  }
+
+  .calendar-wrap .fc-col-header-cell-cushion {
+    font-size: 0.6rem;
+  }
+
+  .calendar-wrap .fc-daygrid-day-number {
+    font-size: 0.65rem;
+  }
+
+  .calendar-wrap .fc-day-add-btn {
+    width: 16px;
+    height: 16px;
+    font-size: 0.75rem;
+  }
+
+  .calendar-wrap .fc-event {
+    font-size: 0.6rem;
+  }
+
+  .calendar-wrap .fc-view-harness {
+    min-height: 180px;
+  }
+
+  .calendar-legend {
+    flex-direction: column;
+    gap: var(--space-sm);
+    font-size: 0.75rem;
+  }
+}

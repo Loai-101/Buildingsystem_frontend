@@ -1,0 +1,58 @@
+/* Hatten Building - Design system CSS variables */
+:root {
+  /* Colors - green + white + black */
+  --color-primary: #2d6a4f;
+  --color-primary-hover: #1b4332;
+  --color-primary-light: #40916c;
+  --color-primary-muted: #b7e4c7;
+  --color-primary-subtle: rgba(45, 106, 79, 0.08);
+  --color-bg: #ffffff;
+  --color-bg-alt: #f1f5f4;
+  --color-bg-elevated: #ffffff;
+  --color-text: #1a1a1a;
+  --color-text-secondary: #374151;
+  --color-text-muted: #6b7280;
+  --color-border: #e5e7eb;
+  --color-border-light: #f3f4f6;
+  --color-error: #dc2626;
+  --color-success: #16a34a;
+  --color-warning: #eab308;
+  --color-pending: #ea580c;
+
+  /* Spacing */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
+
+  /* Border radius */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+  /* Layout */
+  --sidebar-width: 280px;
+  --header-height: 64px;
+
+  /* Touch / mobile (used in media queries) */
+  --touch-target-min: 44px;
+}
+
+/* Mobile breakpoints: 480px (small phone), 768px (tablet), 1024px (desktop) */

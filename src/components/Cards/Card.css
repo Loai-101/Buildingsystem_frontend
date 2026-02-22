@@ -1,0 +1,60 @@
+.card {
+  background: var(--color-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-lg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-light);
+  transition: box-shadow var(--transition), border-color var(--transition);
+}
+
+.card:hover {
+  box-shadow: var(--shadow);
+}
+
+.card-header {
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.card-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+
+.card-body {
+  color: var(--color-text-secondary);
+}
+
+.card.card--clickable {
+  cursor: pointer;
+  transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
+}
+
+.card.card--clickable:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
+  border-color: var(--color-primary-muted);
+}
+
+.card.card--clickable:active {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .card {
+    padding: var(--space-md);
+  }
+
+  .card-header {
+    padding-bottom: var(--space-sm);
+  }
+
+  .card-title {
+    font-size: 1rem;
+  }
+}

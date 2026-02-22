@@ -1,0 +1,121 @@
+.accounts-intro {
+  margin: 0 0 var(--space-2xl);
+  color: var(--color-text-muted);
+  font-size: 1rem;
+}
+
+.back-link {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: var(--space-sm) 0;
+  transition: color var(--transition-fast);
+}
+
+.back-link:hover {
+  color: var(--color-primary-hover);
+  text-decoration: none;
+}
+
+.accounts-year-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--space-lg);
+}
+
+.year-card .card-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-xl);
+}
+
+.year-card-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-primary);
+}
+
+.year-card-arrow {
+  color: var(--color-text-muted);
+  opacity: 0.8;
+}
+
+.accounts-month-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: var(--space-md);
+}
+
+.month-card .card-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-lg);
+}
+
+.month-card-name {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.month-card-arrow {
+  color: var(--color-text-muted);
+  opacity: 0.8;
+}
+
+.accounts-page .modal-actions {
+  display: flex;
+  gap: var(--space-md);
+  margin-top: var(--space-xl);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border-light);
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .accounts-intro {
+    margin-bottom: var(--space-xl);
+    font-size: 0.9375rem;
+  }
+
+  .accounts-year-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+  }
+
+  .year-card .card-body {
+    padding: var(--space-lg);
+  }
+
+  .year-card-value {
+    font-size: 1.5rem;
+  }
+
+  .accounts-month-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-sm);
+  }
+
+  .month-card .card-body {
+    padding: var(--space-md);
+  }
+
+  .month-card-name {
+    font-size: 0.9375rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .accounts-year-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .accounts-month-grid {
+    grid-template-columns: 1fr;
+  }
+}

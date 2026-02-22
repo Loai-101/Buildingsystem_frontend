@@ -1,0 +1,113 @@
+/* Global resets and base styles */
+@import './theme.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--color-bg-alt);
+  color: var(--color-text);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: 16px; /* Prevents iOS zoom on focus when 16px or larger */
+}
+
+@media (min-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 1rem;
+  }
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Toast container override if needed */
+.toast-container {
+  z-index: 9999;
+}
+
+/* Page layout – consistent across Dashboard, Accounts, Maintenance, Majlis */
+.page-content {
+  padding: var(--space-xl);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.loading-state,
+.empty-state {
+  color: var(--color-text-muted);
+  margin: 0;
+  padding: var(--space-lg);
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .page-content {
+    padding: var(--space-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .page-content {
+    padding: var(--space-sm);
+  }
+}
+
+/* RTL (Arabic) – Tajawal for clear, readable Arabic */
+[dir="rtl"] body {
+  font-family: 'Tajawal', 'Segoe UI', system-ui, sans-serif;
+  text-align: right;
+}
