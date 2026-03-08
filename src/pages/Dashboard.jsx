@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   BarChart,
@@ -20,7 +20,7 @@ import {
 import { Header } from '../components/Header';
 import { Card, CardHeader, CardTitle, CardBody } from '../components/Cards/Card';
 import { getBookings } from '../services/bookingService';
-import { getAllRecords } from '../services/accountsService';
+import { getRecordsByYear, getYearsWithRecords } from '../services/accountsService';
 import { getTickets } from '../services/maintenanceService';
 import { useTranslation } from '../i18n';
 import toast from 'react-hot-toast';
@@ -156,7 +156,11 @@ export function Dashboard() {
   }, [role, navigate]);
   const [activity, setActivity] = useState([]);
   const [rawData, setRawData] = useState({ records: [], bookings: [], tickets: [] });
+  const [yearsList, setYearsList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [recordsLoading, setRecordsLoading] = useState(false);
+  const filterYearFetched = useRef(null);
+  const initialLoadDone = useRef(false);
 
   const chartData = useMemo(
     () => buildChartData(rawData.records, rawData.bookings, rawData.tickets, t, { filterYear, filterMonth }),
@@ -199,20 +203,23 @@ export function Dashboard() {
 
   useEffect(() => {
     if (role !== 'Admin') return;
-    async function load() {
-      const toArray = (v) => (Array.isArray(v) ? v : []);
+    const toArray = (v) => (Array.isArray(v) ? v : []);
+    let cancelled = false;
+    (async () => {
       try {
-        const [bookingsResult, recordsResult, ticketsResult] = await Promise.allSettled([
+        const [bookingsResult, ticketsResult, yearsResult] = await Promise.allSettled([
           getBookings(),
-          getAllRecords(),
           getTickets(),
+          getYearsWithRecords(),
         ]);
         const bookings = toArray(bookingsResult.status === 'fulfilled' ? bookingsResult.value : []);
-        const records = toArray(recordsResult.status === 'fulfilled' ? recordsResult.value : []);
         const tickets = toArray(ticketsResult.status === 'fulfilled' ? ticketsResult.value : []);
-        const anyFailed = [bookingsResult, recordsResult, ticketsResult].some((r) => r.status === 'rejected');
+        const years = toArray(yearsResult.status === 'fulfilled' ? yearsResult.value : []);
+        if (cancelled) return;
+        const anyFailed = [bookingsResult, ticketsResult, yearsResult].some((r) => r.status === 'rejected');
         if (anyFailed) toast.error(t('common.noData'));
-        setRawData({ records, bookings, tickets });
+        setYearsList(years.length ? years : [now.getFullYear()]);
+        setRawData((prev) => ({ ...prev, bookings, tickets }));
         const activities = [];
         bookings.slice(-5).reverse().forEach((b) => {
           activities.push({ type: 'booking', text: `Booking ${b.status}: ${b.date} - ${b.name}`, date: b.createdDate });
@@ -222,31 +229,59 @@ export function Dashboard() {
         });
         activities.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
         setActivity(activities.slice(0, 20));
+        const yearToFetch = filterYear ?? now.getFullYear();
+        setRecordsLoading(true);
+        const recordsRes = await getRecordsByYear(yearToFetch).catch(() => []);
+        if (cancelled) return;
+        filterYearFetched.current = yearToFetch;
+        setRawData((prev) => ({ ...prev, records: toArray(recordsRes) }));
       } catch (err) {
-        setRawData({ records: [], bookings: [], tickets: [] });
-        setActivity([]);
-        toast.error(t('common.noData'));
+        if (!cancelled) {
+          setRawData({ records: [], bookings: [], tickets: [] });
+          setActivity([]);
+          toast.error(t('common.noData'));
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          initialLoadDone.current = true;
+          setLoading(false);
+          setRecordsLoading(false);
+        }
       }
-    }
-    load();
+    })();
+    return () => { cancelled = true; };
   }, [t, role]);
+
+  useEffect(() => {
+    if (role !== 'Admin' || !initialLoadDone.current) return;
+    const yearToFetch = filterYear ?? now.getFullYear();
+    if (filterYearFetched.current === yearToFetch) return;
+    filterYearFetched.current = yearToFetch;
+    let cancelled = false;
+    setRecordsLoading(true);
+    getRecordsByYear(yearToFetch)
+      .then((list) => {
+        if (!cancelled) setRawData((prev) => ({ ...prev, records: Array.isArray(list) ? list : [] }));
+      })
+      .catch(() => { if (!cancelled) setRawData((prev) => ({ ...prev, records: [] })); })
+      .finally(() => { if (!cancelled) setRecordsLoading(false); });
+    return () => { cancelled = true; };
+  }, [filterYear, role]);
 
   const isAdmin = role === 'Admin';
   const roleKnown = role !== null && role !== undefined;
   if (roleKnown && !isAdmin) return null;
 
   const availableYears = useMemo(() => {
-    const years = new Set();
-    for (let y = 2020; y <= 2030; y++) years.add(y);
-    rawData.records.forEach((r) => years.add(Number(r.year)));
+    const years = new Set(yearsList.map(Number).filter(Boolean));
     rawData.bookings.forEach((b) => {
       const y = (b.date || '').slice(0, 4);
       if (y) years.add(Number(y));
     });
+    const currentYear = now.getFullYear();
+    if (!years.size) years.add(currentYear);
     return Array.from(years).sort((a, b) => a - b);
-  }, [rawData.records, rawData.bookings]);
+  }, [yearsList, rawData.bookings]);
 
   if (loading) {
     return (
