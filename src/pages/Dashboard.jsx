@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   BarChart,
   Bar,
@@ -22,6 +23,8 @@ import { getBookings } from '../services/bookingService';
 import { getAllRecords } from '../services/accountsService';
 import { getTickets } from '../services/maintenanceService';
 import { useTranslation } from '../i18n';
+import toast from 'react-hot-toast';
+import { useAuthStore } from '../store/useAuthStore';
 import { Calendar, Wallet, Wrench, TrendingUp, Activity } from 'lucide-react';
 import './Dashboard.css';
 
@@ -140,9 +143,17 @@ const MONTH_KEYS = ['january', 'february', 'march', 'april', 'may', 'june', 'jul
 
 export function Dashboard() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const role = useAuthStore((s) => s.role);
   const now = new Date();
   const [filterYear, setFilterYear] = useState(now.getFullYear());
   const [filterMonth, setFilterMonth] = useState(now.getMonth() + 1);
+
+  useEffect(() => {
+    if (role !== null && role !== undefined && role !== 'Admin') {
+      navigate('/accounts', { replace: true });
+    }
+  }, [role, navigate]);
   const [activity, setActivity] = useState([]);
   const [rawData, setRawData] = useState({ records: [], bookings: [], tickets: [] });
   const [loading, setLoading] = useState(true);
@@ -187,13 +198,20 @@ export function Dashboard() {
   }, [activity, filterYear, filterMonth]);
 
   useEffect(() => {
+    if (role !== 'Admin') return;
     async function load() {
+      const toArray = (v) => (Array.isArray(v) ? v : []);
       try {
-        const [bookings, records, tickets] = await Promise.all([
+        const [bookingsResult, recordsResult, ticketsResult] = await Promise.allSettled([
           getBookings(),
           getAllRecords(),
           getTickets(),
         ]);
+        const bookings = toArray(bookingsResult.status === 'fulfilled' ? bookingsResult.value : []);
+        const records = toArray(recordsResult.status === 'fulfilled' ? recordsResult.value : []);
+        const tickets = toArray(ticketsResult.status === 'fulfilled' ? ticketsResult.value : []);
+        const anyFailed = [bookingsResult, recordsResult, ticketsResult].some((r) => r.status === 'rejected');
+        if (anyFailed) toast.error(t('common.noData'));
         setRawData({ records, bookings, tickets });
         const activities = [];
         bookings.slice(-5).reverse().forEach((b) => {
@@ -202,14 +220,22 @@ export function Dashboard() {
         tickets.slice(-3).reverse().forEach((ticket) => {
           activities.push({ type: 'maintenance', text: `Ticket: ${ticket.title} (${ticket.status})`, date: ticket.createdDate });
         });
-        activities.sort((a, b) => new Date(b.date) - new Date(a.date));
+        activities.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
         setActivity(activities.slice(0, 20));
+      } catch (err) {
+        setRawData({ records: [], bookings: [], tickets: [] });
+        setActivity([]);
+        toast.error(t('common.noData'));
       } finally {
         setLoading(false);
       }
     }
     load();
-  }, []);
+  }, [t, role]);
+
+  const isAdmin = role === 'Admin';
+  const roleKnown = role !== null && role !== undefined;
+  if (roleKnown && !isAdmin) return null;
 
   const availableYears = useMemo(() => {
     const years = new Set();

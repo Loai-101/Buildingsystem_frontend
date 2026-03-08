@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/useAuthStore';
@@ -14,7 +14,6 @@ const LOGIN_BG_IMAGE = 'https://res.cloudinary.com/dvybb2xnc/image/upload/v17717
 
 export function Login() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { t } = useTranslation();
   const login = useAuthStore((s) => s.login);
   const [showForm, setShowForm] = useState(false);
@@ -30,9 +29,7 @@ export function Login() {
     formState: { errors },
   } = useForm();
 
-  const from = location.state?.from?.pathname || '/dashboard';
-
-  function onSubmit(data) {
+  async function onSubmit(data) {
     const username = (data.username || '').trim();
     const password = (data.password || '').trim();
     if (!username) {
@@ -43,14 +40,28 @@ export function Login() {
       toast.error(t('login.passwordRequired'));
       return;
     }
-    const auth = validateUser(username, password);
-    if (!auth) {
-      toast.error(t('login.invalidCredentials'));
-      return;
+    try {
+      const auth = await validateUser(username, password);
+      if (!auth) {
+        toast.error(t('login.invalidCredentials'));
+        return;
+      }
+      login(auth.user, auth.role, auth.token);
+      toast.success(t('login.welcome', { name: auth.user }));
+      const isResident = (auth.role || '').toLowerCase() === 'resident';
+      navigate(isResident ? '/accounts' : '/dashboard', { replace: true });
+    } catch (err) {
+      const isNetwork = err.code === 'ERR_NETWORK' || !err.response;
+      if (isNetwork) {
+        toast.error('Cannot connect to server. Start the backend (npm run dev in Buildingsystem_backend).');
+      } else if (err.response?.status === 401) {
+        toast.error(t('login.invalidCredentials'));
+      } else if (err.response?.status === 403 && err.response?.data?.error === 'Account is deactivated') {
+        toast.error(t('userManagement.accountDeactivated'));
+      } else {
+        toast.error(err.response?.data?.error || t('login.invalidCredentials'));
+      }
     }
-    login(auth.user, auth.role);
-    toast.success(t('login.welcome', { name: auth.user }));
-    navigate(from, { replace: true });
   }
 
   return (

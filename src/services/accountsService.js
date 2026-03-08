@@ -1,100 +1,68 @@
 /**
- * Accounts/finance service.
- * Currently uses mock data with localStorage persistence.
- * Replace with api.get/post/put/delete when backend is ready.
+ * Accounts/finance service – uses backend API.
  */
+import api from './api';
 
-const STORAGE_KEY = 'hatten_accounts';
-
-function loadFromStorage() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveToStorage(records) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-}
-
-/** Get all records (for filtering in UI). Backend: GET /accounts */
+/** Get all records (for filtering in UI). */
 export function getAllRecords() {
-  return Promise.resolve(loadFromStorage());
+  return api.get('/accounts').then((res) => res.data);
 }
 
-/** Get records for a specific year and month. Backend: GET /accounts?year=&month= */
+/** Get records for a specific year and month. */
 export function getRecordsByYearMonth(year, month) {
-  const all = loadFromStorage();
-  const list = all.filter(
-    (r) => Number(r.year) === Number(year) && Number(r.month) === Number(month)
-  );
-  return Promise.resolve(list);
+  return api.get('/accounts', { params: { year, month } }).then((res) => res.data);
 }
 
-/** Add a new record. Backend: POST /accounts */
+/** Get all records for a year (for year dashboard). */
+export function getRecordsByYear(year) {
+  return api.get('/accounts', { params: { year } }).then((res) => res.data);
+}
+
+/** Add a new record. */
 export function addRecord(record) {
-  const all = loadFromStorage();
-  const id = String(Date.now());
-  const newRecord = { id, ...record };
-  all.push(newRecord);
-  saveToStorage(all);
-  return Promise.resolve(newRecord);
+  return api
+    .post('/accounts', {
+      date: record.date,
+      type: record.type,
+      category: record.category || '',
+      description: record.description || '',
+      amount: record.amount,
+      year: record.year,
+      month: record.month,
+      attachment: record.attachment != null ? record.attachment : null,
+    })
+    .then((res) => res.data);
 }
 
-/** Update record. Backend: PUT /accounts/:id */
+/** Update record. */
 export function updateRecord(id, updates) {
-  const all = loadFromStorage();
-  const idx = all.findIndex((r) => r.id === id);
-  if (idx === -1) return Promise.reject(new Error('Record not found'));
-  all[idx] = { ...all[idx], ...updates };
-  saveToStorage(all);
-  return Promise.resolve(all[idx]);
+  return api.put(`/accounts/${id}`, updates).then((res) => res.data);
 }
 
-/** Delete record. Backend: DELETE /accounts/:id */
+/** Delete record. */
 export function deleteRecord(id) {
-  const all = loadFromStorage().filter((r) => r.id !== id);
-  saveToStorage(all);
-  return Promise.resolve({ id });
+  return api.delete(`/accounts/${id}`).then(() => ({ id }));
 }
 
-const EXTRA_YEARS_KEY = 'hatten_accounts_extra_years';
-
-function loadExtraYears() {
-  try {
-    const raw = localStorage.getItem(EXTRA_YEARS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveExtraYears(years) {
-  localStorage.setItem(EXTRA_YEARS_KEY, JSON.stringify(years));
-}
-
-/** Get distinct years: from records + admin-added years (front-end only) */
+/** Get distinct years: from records + admin-added years. */
 export function getYearsWithRecords() {
-  const all = loadFromStorage();
-  const fromRecords = [...new Set(all.map((r) => Number(r.year)))].filter(Boolean);
-  const extra = loadExtraYears();
-  const combined = [...new Set([...fromRecords, ...extra])].filter(Boolean).sort((a, b) => b - a);
-  if (combined.length === 0) return Promise.resolve([new Date().getFullYear()]);
-  return Promise.resolve(combined);
+  return api.get('/accounts/years').then((res) => res.data);
 }
 
-/** Admin only: add a year so it appears in the list (front-end only) */
+/** Admin only: add a year so it appears in the list. */
 export function addYear(year) {
   const y = Number(year);
   if (!Number.isInteger(y) || y < 2000 || y > 2100) {
     return Promise.reject(new Error('Please enter a valid year (2000–2100).'));
   }
-  const extra = loadExtraYears();
-  if (extra.includes(y)) return Promise.resolve(y);
-  extra.push(y);
-  extra.sort((a, b) => b - a);
-  saveExtraYears(extra);
-  return Promise.resolve(y);
+  return api.post('/accounts/years', { year: y }).then((res) => res.data);
+}
+
+/** Admin only: delete a year and all its records. */
+export function deleteYear(year) {
+  const y = Number(year);
+  if (!Number.isInteger(y) || y < 2000 || y > 2100) {
+    return Promise.reject(new Error('Please enter a valid year (2000–2100).'));
+  }
+  return api.delete(`/accounts/years/${y}`).then((res) => res.data);
 }

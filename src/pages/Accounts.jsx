@@ -1,15 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { Card, CardBody } from '../components/Cards/Card';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modals/Modal';
+import { ConfirmDialog } from '../components/Modals/ConfirmDialog';
 import { FormField } from '../components/FormField';
-import { getYearsWithRecords, addYear } from '../services/accountsService';
+import { getYearsWithRecords, addYear, deleteYear, getRecordsByYear } from '../services/accountsService';
 import { useAuthStore, isAdmin } from '../store/useAuthStore';
 import { useTranslation } from '../i18n';
 import toast from 'react-hot-toast';
-import { ChevronRight, Plus } from 'lucide-react';
+import { ChevronRight, Plus, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
 import './Accounts.css';
 
 const MONTH_KEYS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
@@ -25,15 +26,84 @@ export function Accounts() {
   const [loading, setLoading] = useState(true);
   const [addYearModalOpen, setAddYearModalOpen] = useState(false);
   const [newYear, setNewYear] = useState(currentYear);
+  const [yearRecords, setYearRecords] = useState([]);
+  const [yearDashboardLoading, setYearDashboardLoading] = useState(false);
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', variant: 'danger', confirmLabel: '', onConfirm: null });
 
   function loadYears() {
     setLoading(true);
-    getYearsWithRecords().then(setYears).finally(() => setLoading(false));
+    getYearsWithRecords()
+      .then(setYears)
+      .catch(() => {
+        setYears([]);
+        toast.error(t('common.noData'));
+      })
+      .finally(() => setLoading(false));
   }
 
   useEffect(() => {
     loadYears();
   }, []);
+
+  useEffect(() => {
+    if (view !== 'months' || !selectedYear) {
+      setYearRecords([]);
+      return;
+    }
+    setYearDashboardLoading(true);
+    getRecordsByYear(selectedYear)
+      .then((list) => setYearRecords(Array.isArray(list) ? list : []))
+      .catch(() => setYearRecords([]))
+      .finally(() => setYearDashboardLoading(false));
+  }, [view, selectedYear]);
+
+  const yearStats = useMemo(() => {
+    const byMonth = {};
+    for (let m = 1; m <= 12; m++) byMonth[m] = { income: 0, expense: 0 };
+    yearRecords.forEach((r) => {
+      const month = Number(r.month);
+      if (month >= 1 && month <= 12) {
+        const amt = Number(r.amount) || 0;
+        if (r.type === 'Income') byMonth[month].income += amt;
+        else byMonth[month].expense += amt;
+      }
+    });
+    let totalIncome = 0;
+    let totalExpense = 0;
+    let bestIncomeMonth = 0;
+    let bestIncomeAmount = 0;
+    let mostExpenseMonth = 0;
+    let mostExpenseAmount = 0;
+    for (let m = 1; m <= 12; m++) {
+      totalIncome += byMonth[m].income;
+      totalExpense += byMonth[m].expense;
+      if (byMonth[m].income > bestIncomeAmount) {
+        bestIncomeAmount = byMonth[m].income;
+        bestIncomeMonth = m;
+      }
+      if (byMonth[m].expense > mostExpenseAmount) {
+        mostExpenseAmount = byMonth[m].expense;
+        mostExpenseMonth = m;
+      }
+    }
+    const monthNets = {};
+    const monthHasData = {};
+    for (let m = 1; m <= 12; m++) {
+      monthNets[m] = byMonth[m].income - byMonth[m].expense;
+      monthHasData[m] = byMonth[m].income > 0 || byMonth[m].expense > 0;
+    }
+    return {
+      net: totalIncome - totalExpense,
+      totalIncome,
+      totalExpense,
+      bestIncomeMonth: bestIncomeAmount > 0 ? bestIncomeMonth : 0,
+      bestIncomeAmount,
+      mostExpenseMonth: mostExpenseAmount > 0 ? mostExpenseMonth : 0,
+      mostExpenseAmount,
+      monthNets,
+      monthHasData,
+    };
+  }, [yearRecords]);
 
   function handleYearClick(year) {
     setSelectedYear(year);
@@ -66,6 +136,31 @@ export function Accounts() {
         loadYears();
       })
       .catch((err) => toast.error(err.message || t('accounts.validYear')));
+  }
+
+  function handleDeleteYear(e, year) {
+    e.preventDefault();
+    e.stopPropagation();
+    const yearNum = Number(year);
+    setConfirm({
+      open: true,
+      title: t('accounts.deleteYear'),
+      message: t('accounts.deleteYearConfirm', { year }),
+      variant: 'danger',
+      confirmLabel: t('common.delete'),
+      onConfirm: () => {
+        deleteYear(yearNum)
+          .then(() => {
+            toast.success(t('accounts.yearDeleted', { year: yearNum }));
+            loadYears();
+          })
+          .catch((err) => {
+            const msg = err.response?.data?.error || err.message || t('common.noData');
+            toast.error(msg);
+          })
+          .finally(() => setConfirm((c) => ({ ...c, open: false })));
+      },
+    });
   }
 
   const monthNames = MONTH_KEYS.map((k) => t(`months.${k}`));
@@ -109,7 +204,20 @@ export function Accounts() {
                 >
                   <CardBody>
                     <span className="year-card-value">{year}</span>
-                    <ChevronRight size={20} className="year-card-arrow" />
+                    <div className="year-card-actions" onClick={(e) => e.stopPropagation()}>
+                      {admin && (
+                        <button
+                          type="button"
+                          className="year-card-delete"
+                          onClick={(e) => handleDeleteYear(e, year)}
+                          title={t('accounts.deleteYear')}
+                          aria-label={t('accounts.deleteYear')}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      )}
+                      <ChevronRight size={20} className="year-card-arrow" />
+                    </div>
                   </CardBody>
                 </Card>
               ))}
@@ -119,18 +227,65 @@ export function Accounts() {
         {view === 'months' && selectedYear && (
           <>
             <p className="accounts-intro">{t('accounts.selectMonth', { year: selectedYear })}</p>
+            {yearDashboardLoading ? (
+              <p className="loading-state">{t('common.loading')}</p>
+            ) : yearStats ? (
+              <Card className="accounts-year-dashboard">
+                <CardBody>
+                  <h2 className="year-dashboard-title">{t('accounts.yearDashboard')} — {selectedYear}</h2>
+                  <div className="year-dashboard-stats">
+                    <div className={`year-dashboard-stat year-dashboard-stat--net year-dashboard-net--${yearStats.net >= 0 ? 'positive' : 'negative'}`}>
+                      <div className="year-dashboard-stat-text">
+                        <span className="year-dashboard-label">{t('accounts.yearNet')}</span>
+                        <span className="year-dashboard-value">
+                          {yearStats.net >= 0 ? '+' : ''} BD {yearStats.net.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="year-dashboard-stat year-dashboard-stat--income">
+                      <TrendingUp size={22} aria-hidden className="year-dashboard-icon" />
+                      <div className="year-dashboard-stat-text">
+                        <span className="year-dashboard-label">{t('accounts.bestMonthIncome')}</span>
+                        <span className="year-dashboard-value">
+                          {yearStats.bestIncomeMonth ? t(`months.${MONTH_KEYS[yearStats.bestIncomeMonth - 1]}`) : '—'}
+                          <em className="year-dashboard-amount"> BD {yearStats.bestIncomeAmount.toLocaleString()}</em>
+                        </span>
+                      </div>
+                    </div>
+                    <div className="year-dashboard-stat year-dashboard-stat--expense">
+                      <TrendingDown size={22} aria-hidden className="year-dashboard-icon" />
+                      <div className="year-dashboard-stat-text">
+                        <span className="year-dashboard-label">{t('accounts.mostExpenseMonth')}</span>
+                        <span className="year-dashboard-value">
+                          {yearStats.mostExpenseMonth ? t(`months.${MONTH_KEYS[yearStats.mostExpenseMonth - 1]}`) : '—'}
+                          <em className="year-dashboard-amount"> BD {yearStats.mostExpenseAmount.toLocaleString()}</em>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </CardBody>
+              </Card>
+            ) : null}
             <div className="accounts-month-grid">
               {monthNames.map((name, index) => {
                 const month = index + 1;
+                const net = yearStats?.monthNets?.[month] ?? 0;
+                const hasData = yearStats?.monthHasData?.[month] ?? false;
+                const variant = hasData && net > 0 ? 'positive' : hasData && net < 0 ? 'negative' : 'neutral';
                 return (
                   <Card
                     key={month}
-                    className="card card--clickable month-card"
+                    className={`card card--clickable month-card month-card--${variant}`}
                     onClick={() => handleMonthClick(month)}
                   >
                     <CardBody>
-                      <span className="month-card-name">{name}</span>
-                      <ChevronRight size={20} className="month-card-arrow" />
+                      <div className="month-card-top">
+                        <span className="month-card-name">{name}</span>
+                        <ChevronRight size={20} className="month-card-arrow" />
+                      </div>
+                      <div className={`month-card-net month-card-net--${variant}`}>
+                        {hasData && net > 0 ? '+' : ''} BD {net.toLocaleString()}
+                      </div>
                     </CardBody>
                   </Card>
                 );
@@ -139,6 +294,17 @@ export function Accounts() {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirm.open}
+        onClose={() => setConfirm((c) => ({ ...c, open: false }))}
+        onConfirm={confirm.onConfirm}
+        title={confirm.title}
+        message={confirm.message}
+        variant={confirm.variant}
+        confirmLabel={confirm.confirmLabel}
+        cancelLabel={t('common.cancel')}
+      />
 
       {admin && (
         <Modal open={addYearModalOpen} onClose={() => setAddYearModalOpen(false)} title={t('accounts.addYearModalTitle')}>

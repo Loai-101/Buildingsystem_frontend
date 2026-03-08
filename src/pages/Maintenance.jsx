@@ -5,69 +5,130 @@ import { Header } from '../components/Header';
 import { Card, CardHeader, CardTitle, CardBody } from '../components/Cards/Card';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modals/Modal';
+import { ConfirmDialog } from '../components/Modals/ConfirmDialog';
 import { FormField } from '../components/FormField';
-import { getTickets, createTicket, updateTicket, getVendors } from '../services/maintenanceService';
-import { useAuthStore, isAdmin } from '../store/useAuthStore';
+import { getVendors, addVendor, updateVendor, deleteVendor } from '../services/maintenanceService';
+import { isAdmin } from '../store/useAuthStore';
 import { useTranslation } from '../i18n';
-import { Plus, Phone, User } from 'lucide-react';
+import { Plus, Phone, User, Trash2, Camera } from 'lucide-react';
 import './Maintenance.css';
 
-const PRIORITIES = ['Low', 'Medium', 'High'];
-const CATEGORIES = ['General', 'Plumbing', 'Electrical', 'HVAC', 'Security', 'Other'];
-const STATUS_FLOW = ['Open', 'In Progress', 'Done'];
+const VENDOR_CATEGORIES = ['General', 'Plumbing', 'Electrical', 'HVAC', 'Security', 'Cleaner', 'Other'];
 
 export function Maintenance() {
   const { t } = useTranslation();
   const isAdminRole = isAdmin();
-  const [tickets, setTickets] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [vendorModalOpen, setVendorModalOpen] = useState(false);
+  const [editingVendor, setEditingVendor] = useState(null);
+  const [editImage, setEditImage] = useState(null);
+  const [viewingVendor, setViewingVendor] = useState(null);
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', variant: 'danger', confirmLabel: '', onConfirm: null });
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
   function load() {
-    Promise.all([getTickets(), getVendors()]).then(([t, v]) => {
-      setTickets(t);
-      setVendors(v);
-    }).finally(() => setLoading(false));
+    getVendors().then(setVendors).finally(() => setLoading(false));
   }
 
   useEffect(() => {
     load();
   }, []);
 
-  function openCreateModal() {
-    reset({ title: '', category: 'General', priority: 'Medium', description: '' });
-    setModalOpen(true);
+  function openAddVendorModal() {
+    setEditingVendor(null);
+    setEditImage(null);
+    reset({ name: '', title: '', phone: '', category: 'General' });
+    setVendorModalOpen(true);
   }
 
-  function onCreateTicket(data) {
-    createTicket({
-      title: data.title,
-      category: data.category,
-      priority: data.priority,
-      description: data.description,
+  function openEditVendorModal(v) {
+    setEditingVendor(v);
+    setEditImage(v.image || null);
+    reset({
+      name: v.name || '',
+      title: v.title || '',
+      phone: v.phone || '',
+      category: v.category || 'General',
+    });
+    setVendorModalOpen(true);
+  }
+
+  function closeVendorModal() {
+    setVendorModalOpen(false);
+    setEditingVendor(null);
+    setEditImage(null);
+  }
+
+  function openViewVendorModal(v) {
+    setViewingVendor(v);
+  }
+
+  function closeViewVendorModal() {
+    setViewingVendor(null);
+  }
+
+  function handleVendorImageChange(e) {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = () => setEditImage(reader.result);
+    reader.readAsDataURL(file);
+  }
+
+  function onAddVendor(data) {
+    addVendor({
+      name: data.name,
+      title: data.title || '',
+      phone: data.phone || '',
+      category: data.category || 'General',
+      image: editImage || null,
     })
       .then(() => {
-        toast.success(t('maintenance.ticketCreated'));
-        setModalOpen(false);
+        toast.success(t('maintenance.vendorAdded'));
+        closeVendorModal();
         load();
       })
-      .catch(() => toast.error(t('maintenance.ticketCreated')));
+      .catch(() => toast.error(t('maintenance.vendorAddFailed')));
   }
 
-  function changeStatus(ticket, newStatus) {
-    updateTicket(ticket.id, { status: newStatus })
+  function onUpdateVendor(data) {
+    if (!editingVendor) return;
+    updateVendor(editingVendor.id, {
+      name: data.name,
+      title: data.title || '',
+      phone: data.phone || '',
+      category: data.category || 'General',
+      image: editImage,
+    })
       .then(() => {
-        toast.success(t('maintenance.statusUpdated'));
+        toast.success(t('maintenance.vendorUpdated'));
+        closeVendorModal();
         load();
       })
-      .catch(() => toast.error(t('maintenance.statusUpdated')));
+      .catch(() => toast.error(t('maintenance.vendorUpdateFailed')));
   }
 
-  const statusLabel = (s) => (s === 'In Progress' ? t('maintenance.inProgress') : s === 'Done' ? t('maintenance.done') : t('maintenance.open'));
-  const priorityLabel = (p) => (p === 'Low' ? t('maintenance.low') : p === 'High' ? t('maintenance.high') : t('maintenance.medium'));
+  function onDeleteVendor(v, e) {
+    if (e) e.stopPropagation();
+    setConfirm({
+      open: true,
+      title: t('maintenance.deleteVendor'),
+      message: t('maintenance.deleteVendorConfirm', { name: v.name }),
+      variant: 'danger',
+      confirmLabel: t('common.delete'),
+      onConfirm: () => {
+        deleteVendor(v.id)
+          .then(() => {
+            toast.success(t('maintenance.vendorDeleted'));
+            load();
+          })
+          .catch(() => toast.error(t('maintenance.vendorDeleteFailed')))
+          .finally(() => setConfirm((c) => ({ ...c, open: false })));
+      },
+    });
+  }
 
   if (loading) {
     return (
@@ -80,55 +141,19 @@ export function Maintenance() {
 
   return (
     <div className="maintenance-page">
-      <Header title={t('maintenance.title')}>
-        <Button onClick={openCreateModal}>
-          <Plus size={18} />
-          {t('maintenance.createTicket')}
-        </Button>
-      </Header>
+      <Header title={t('maintenance.title')} />
       <div className="page-content">
         <p className="maintenance-intro">{t('maintenance.intro')}</p>
-
-        <Card className="maintenance-tickets">
-          <CardHeader>
-            <CardTitle>{t('maintenance.tickets')}</CardTitle>
-          </CardHeader>
-          <CardBody>
-            {tickets.length === 0 ? (
-              <p className="empty-state">{t('maintenance.noTickets')}</p>
-            ) : (
-              <ul className="tickets-list">
-                {tickets.map((ticket) => (
-                  <li key={ticket.id} className="ticket-item">
-                    <div className="ticket-main">
-                      <span className="ticket-id">{ticket.id}</span>
-                      <span className="ticket-title">{ticket.title}</span>
-                      <span className="ticket-meta">
-                        {ticket.category} · {priorityLabel(ticket.priority)} · {statusLabel(ticket.status)}
-                      </span>
-                      <span className="ticket-date">{ticket.createdDate}</span>
-                    </div>
-                    {isAdminRole && (
-                      <div className="status-actions">
-                        {STATUS_FLOW.map((s) =>
-                          ticket.status !== s ? (
-                            <Button key={s} variant="outline" className="btn--sm" onClick={() => changeStatus(ticket, s)}>
-                              {statusLabel(s)}
-                            </Button>
-                          ) : null
-                        )}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardBody>
-        </Card>
 
         <Card className="maintenance-vendors">
           <CardHeader>
             <CardTitle>{t('maintenance.vendorsContacts')}</CardTitle>
+            {isAdminRole && (
+              <Button onClick={openAddVendorModal}>
+                <Plus size={18} />
+                {t('maintenance.addVendor')}
+              </Button>
+            )}
           </CardHeader>
           <CardBody>
             {vendors.length === 0 ? (
@@ -136,7 +161,14 @@ export function Maintenance() {
             ) : (
               <div className="vendor-cards">
                 {vendors.map((v) => (
-                  <div key={v.id} className="vendor-card">
+                  <div
+                    key={v.id}
+                    className={`vendor-card ${isAdminRole ? 'vendor-card--editable' : 'vendor-card--viewable'}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={isAdminRole ? () => openEditVendorModal(v) : () => openViewVendorModal(v)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); isAdminRole ? openEditVendorModal(v) : openViewVendorModal(v); } }}
+                  >
                     <div className="vendor-card-image-wrap">
                       {v.image ? (
                         <img src={v.image} alt="" className="vendor-card-image" />
@@ -147,15 +179,27 @@ export function Maintenance() {
                       )}
                     </div>
                     <div className="vendor-card-content">
+                      {isAdminRole && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="vendor-card-delete"
+                          onClick={(e) => onDeleteVendor(v, e)}
+                          title={t('maintenance.deleteVendor')}
+                          aria-label={t('maintenance.deleteVendor')}
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      )}
                       {v.title && <span className="vendor-card-title">{v.title}</span>}
                       <h3 className="vendor-card-name">{v.name}</h3>
                       {v.phone && (
-                        <a href={`tel:${v.phone.replace(/\s/g, '')}`} className="vendor-card-phone">
+                        <a href={`tel:${v.phone.replace(/\s/g, '')}`} className="vendor-card-phone" onClick={(e) => e.stopPropagation()}>
                           <Phone size={16} aria-hidden="true" />
                           {v.phone}
                         </a>
                       )}
-                      {v.category && <span className="vendor-card-category">{v.category}</span>}
+                      {v.category && <span className="vendor-card-category">{VENDOR_CATEGORIES.includes(v.category) ? t(`maintenance.categories.${v.category}`) : v.category}</span>}
                     </div>
                   </div>
                 ))}
@@ -165,38 +209,107 @@ export function Maintenance() {
         </Card>
       </div>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('maintenance.createTicketModal')}>
-        <form onSubmit={handleSubmit(onCreateTicket)} noValidate>
-          <FormField label={t('maintenance.ticketTitle')} required error={errors.title?.message ? t('maintenance.titleRequired') : undefined}>
+      <Modal open={vendorModalOpen} onClose={closeVendorModal} title={editingVendor ? t('maintenance.editVendorModal') : t('maintenance.addVendorModal')}>
+        <form onSubmit={handleSubmit(editingVendor ? onUpdateVendor : onAddVendor)} noValidate>
+          <div className="vendor-form-image-row">
+            <div className="vendor-form-image-preview">
+              {editImage ? (
+                <img src={editImage} alt="" />
+              ) : (
+                <div className="vendor-form-image-placeholder" aria-hidden="true">
+                  <User size={40} />
+                </div>
+              )}
+            </div>
+            <div className="vendor-form-image-actions">
+              <label className="vendor-form-upload-btn">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleVendorImageChange}
+                  className="visually-hidden"
+                />
+                <Camera size={18} aria-hidden="true" />
+                {t('maintenance.uploadImage')}
+              </label>
+              {editImage && (
+                <Button type="button" variant="outline" className="vendor-form-remove-image" onClick={() => setEditImage(null)}>
+                  {t('maintenance.removeImage')}
+                </Button>
+              )}
+            </div>
+          </div>
+          <FormField label={t('maintenance.vendorName')} required error={errors.name?.message ? t('maintenance.vendorNameRequired') : undefined}>
             <input
               type="text"
-              placeholder={t('maintenance.titlePlaceholder')}
-              {...register('title', { required: true })}
+              placeholder={t('maintenance.vendorNamePlaceholder')}
+              {...register('name', { required: true })}
             />
+          </FormField>
+          <FormField label={t('maintenance.vendorTitle')}>
+            <input type="text" placeholder={t('maintenance.vendorTitlePlaceholder')} {...register('title')} />
+          </FormField>
+          <FormField label={t('maintenance.vendorPhone')}>
+            <input type="text" placeholder={t('maintenance.vendorPhonePlaceholder')} {...register('phone')} />
           </FormField>
           <FormField label={t('accountsMonth.category')}>
             <select {...register('category')}>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
+              {VENDOR_CATEGORIES.map((c) => (
+                <option key={c} value={c}>{t(`maintenance.categories.${c}`)}</option>
               ))}
             </select>
-          </FormField>
-          <FormField label={t('maintenance.priority')}>
-            <select {...register('priority')}>
-              {PRIORITIES.map((p) => (
-                <option key={p} value={p}>{priorityLabel(p)}</option>
-              ))}
-            </select>
-          </FormField>
-          <FormField label={t('accountsMonth.description')} error={errors.description?.message}>
-            <textarea {...register('description')} placeholder={t('maintenance.descriptionOptional')} />
           </FormField>
           <div className="modal-actions">
-            <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>{t('common.cancel')}</Button>
-            <Button type="submit">{t('common.add')}</Button>
+            <Button type="button" variant="outline" onClick={closeVendorModal}>{t('common.cancel')}</Button>
+            <Button type="submit">{editingVendor ? t('common.save') : t('common.add')}</Button>
           </div>
         </form>
       </Modal>
+
+      <ConfirmDialog
+        open={confirm.open}
+        onClose={() => setConfirm((c) => ({ ...c, open: false }))}
+        onConfirm={confirm.onConfirm}
+        title={confirm.title}
+        message={confirm.message}
+        variant={confirm.variant}
+        confirmLabel={confirm.confirmLabel}
+        cancelLabel={t('common.cancel')}
+      />
+
+      {viewingVendor && (
+        <Modal open={!!viewingVendor} onClose={closeViewVendorModal} title={t('maintenance.vendorProfile')}>
+          <div className="vendor-view-profile">
+            <div className="vendor-view-image-wrap">
+              {viewingVendor.image ? (
+                <img src={viewingVendor.image} alt="" className="vendor-view-image" />
+              ) : (
+                <div className="vendor-view-placeholder" aria-hidden="true">
+                  <User size={48} />
+                </div>
+              )}
+            </div>
+            {viewingVendor.title && <span className="vendor-view-title">{viewingVendor.title}</span>}
+            <h3 className="vendor-view-name">{viewingVendor.name}</h3>
+            {viewingVendor.category && (
+              <span className="vendor-view-category">
+                {VENDOR_CATEGORIES.includes(viewingVendor.category) ? t(`maintenance.categories.${viewingVendor.category}`) : viewingVendor.category}
+              </span>
+            )}
+            {viewingVendor.phone ? (
+              <a href={`tel:${viewingVendor.phone.replace(/\s/g, '')}`} className="vendor-view-call">
+                <Phone size={20} aria-hidden="true" />
+                {t('maintenance.callNumber')} {viewingVendor.phone}
+              </a>
+            ) : (
+              <p className="vendor-view-no-phone">{t('maintenance.noPhone')}</p>
+            )}
+            <div className="modal-actions">
+              <Button type="button" variant="outline" onClick={closeViewVendorModal}>{t('common.close')}</Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

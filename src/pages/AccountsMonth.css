@@ -130,7 +130,48 @@
 
 .record-amount {
   font-weight: 600;
+}
+
+.record-amount--income {
+  color: var(--color-success, #16a34a);
+}
+
+.record-amount--expense {
+  color: var(--color-error, #dc2626);
+}
+
+/* Month summary row at end of table: green if +, red if − */
+.records-month-summary {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+  padding: var(--space-lg);
+  border-top: 2px solid var(--color-border);
+  font-weight: 700;
+  font-size: 1.125rem;
+}
+
+.records-month-summary--positive {
+  background: rgba(22, 163, 74, 0.08);
+  color: var(--color-success, #16a34a);
+  border-top-color: var(--color-success, #16a34a);
+}
+
+.records-month-summary--negative {
+  background: rgba(220, 38, 38, 0.08);
+  color: var(--color-error, #dc2626);
+  border-top-color: var(--color-error, #dc2626);
+}
+
+.records-month-summary-label {
   color: var(--color-text);
+}
+
+.records-month-summary-value {
+  min-width: 120px;
+  text-align: right;
 }
 
 .record-meta {
@@ -176,6 +217,17 @@
 
 .link-button:hover {
   color: var(--color-text-muted);
+}
+
+.empty-state-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.clear-filters-btn {
+  margin-top: 0;
 }
 
 .attachment-preview {
@@ -229,6 +281,19 @@
 .attachment-view .modal-close:hover {
   background: var(--color-bg-alt);
   border-color: var(--color-text-muted);
+}
+
+.attachment-view-actions {
+  display: flex;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+.attachment-view-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
 }
 
 .attachment-view img {

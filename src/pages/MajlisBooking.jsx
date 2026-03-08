@@ -6,6 +6,7 @@ import { Header } from '../components/Header';
 import { Card, CardHeader, CardTitle, CardBody } from '../components/Cards/Card';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modals/Modal';
+import { ConfirmDialog } from '../components/Modals/ConfirmDialog';
 import { FormField } from '../components/FormField';
 import { getBookings, createBooking, updateBookingStatus, updateBooking, getApprovedDates } from '../services/bookingService';
 import { useAuthStore, isAdmin } from '../store/useAuthStore';
@@ -26,12 +27,14 @@ const STATUS_COLORS = {
 export function MajlisBooking() {
   const { t } = useTranslation();
   const isAdminRole = isAdmin();
+  const loginUser = useAuthStore((s) => s.user);
   const [bookings, setBookings] = useState([]);
   const [approvedDates, setApprovedDates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [viewBooking, setViewBooking] = useState(null);
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', variant: 'primary', confirmLabel: '', onConfirm: null });
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
@@ -74,9 +77,10 @@ export function MajlisBooking() {
       return;
     }
     setSelectedDate(dateStr);
-    reset({ date: dateStr, startTime: '09:00', endTime: '10:00', name: '', notes: '' });
+    const defaultName = (typeof loginUser === 'string' ? loginUser : (loginUser && loginUser.username) || '') || '';
+    reset({ date: dateStr, startTime: '09:00', endTime: '10:00', name: defaultName, notes: '' });
     setModalOpen(true);
-  }, [approvedDates, reset, t]);
+  }, [approvedDates, reset, t, loginUser]);
 
   const openBookingModalRef = useRef(openBookingModal);
   openBookingModalRef.current = openBookingModal;
@@ -134,15 +138,30 @@ export function MajlisBooking() {
   }
 
   function approveReject(id, status) {
-    updateBookingStatus(id, status)
-      .then(() => {
-        toast.success(status === 'Approved' ? t('majlisBooking.bookingApproved') : t('majlisBooking.bookingRejected'));
-        load();
-      })
-      .catch(() => toast.error(t('common.noData')));
+    const isApprove = status === 'Approved';
+    setConfirm({
+      open: true,
+      title: isApprove ? t('majlisBooking.approve') : t('majlisBooking.reject'),
+      message: isApprove ? t('majlisBooking.approveConfirm') : t('majlisBooking.rejectConfirm'),
+      variant: isApprove ? 'success' : 'danger',
+      confirmLabel: isApprove ? t('majlisBooking.approve') : t('majlisBooking.reject'),
+      onConfirm: () => {
+        updateBookingStatus(id, status)
+          .then(() => {
+            toast.success(status === 'Approved' ? t('majlisBooking.bookingApproved') : t('majlisBooking.bookingRejected'));
+            load();
+          })
+          .catch(() => toast.error(t('common.noData')))
+          .finally(() => setConfirm((c) => ({ ...c, open: false })));
+      },
+    });
   }
 
   function handleEventDrop(info) {
+    if (!isAdminRole) {
+      info.revert();
+      return;
+    }
     const start = info.event.start;
     if (!start) {
       info.revert();
@@ -207,7 +226,7 @@ export function MajlisBooking() {
                   plugins={[dayGridPlugin, interactionPlugin]}
                   initialView="dayGridMonth"
                   events={events}
-                  editable
+                  editable={isAdminRole}
                   dateClick={handleDateClick}
                   eventClick={handleEventClick}
                   dayCellDidMount={dayCellDidMount}
@@ -258,6 +277,17 @@ export function MajlisBooking() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirm.open}
+        onClose={() => setConfirm((c) => ({ ...c, open: false }))}
+        onConfirm={confirm.onConfirm}
+        title={confirm.title}
+        message={confirm.message}
+        variant={confirm.variant}
+        confirmLabel={confirm.confirmLabel}
+        cancelLabel={t('common.cancel')}
+      />
 
       <Modal open={!!viewBooking} onClose={() => setViewBooking(null)} title={t('majlisBooking.bookingDetails')}>
         {viewBooking && (

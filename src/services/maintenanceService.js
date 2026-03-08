@@ -1,80 +1,62 @@
 /**
- * Maintenance tickets and vendors service.
- * Mock data with localStorage persistence.
- * Replace with real API when backend is ready.
+ * Maintenance tickets and vendors – uses backend API.
  */
+import api from './api';
 
-const TICKETS_KEY = 'hatten_maintenance_tickets';
-const VENDORS_KEY = 'hatten_maintenance_vendors';
-
-function loadTickets() {
-  try {
-    const raw = localStorage.getItem(TICKETS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveTickets(tickets) {
-  localStorage.setItem(TICKETS_KEY, JSON.stringify(tickets));
-}
-
-function loadVendors() {
-  try {
-    const raw = localStorage.getItem(VENDORS_KEY);
-    const list = raw ? JSON.parse(raw) : [];
-    if (list.length > 0) return list;
-    return [
-      { id: 'v1', name: 'ABC Plumbing', title: 'Plumber', phone: '+60 12-345 6789', category: 'Plumbing', image: null },
-      { id: 'v2', name: 'XYZ Electrical', title: 'Electrician', phone: '+60 12-987 6543', category: 'Electrical', image: null },
-    ];
-  } catch {
-    return [
-      { id: 'v1', name: 'ABC Plumbing', title: 'Plumber', phone: '+60 12-345 6789', category: 'Plumbing', image: null },
-      { id: 'v2', name: 'XYZ Electrical', title: 'Electrician', phone: '+60 12-987 6543', category: 'Electrical', image: null },
-    ];
-  }
-}
-
-function saveVendors(vendors) {
-  localStorage.setItem(VENDORS_KEY, JSON.stringify(vendors));
-}
-
-/** Get all tickets. Backend: GET /maintenance/tickets */
+/** Get all tickets. */
 export function getTickets() {
-  return Promise.resolve(loadTickets());
+  return api.get('/maintenance/tickets').then((res) => res.data);
 }
 
-/** Create ticket. Backend: POST /maintenance/tickets */
+/** Create ticket. */
 export function createTicket(data) {
-  const tickets = loadTickets();
-  const id = 'T' + Date.now();
-  const ticket = {
-    id,
-    title: data.title,
-    category: data.category || 'General',
-    priority: data.priority || 'Medium',
-    status: 'Open',
-    createdDate: new Date().toISOString().slice(0, 10),
-    description: data.description || '',
-  };
-  tickets.push(ticket);
-  saveTickets(tickets);
-  return Promise.resolve(ticket);
+  return api
+    .post('/maintenance/tickets', {
+      title: data.title,
+      category: data.category || 'General',
+      priority: data.priority || 'Medium',
+      description: data.description || '',
+    })
+    .then((res) => res.data);
 }
 
-/** Update ticket (e.g. status). Backend: PUT /maintenance/tickets/:id */
+/** Update ticket. */
 export function updateTicket(id, updates) {
-  const tickets = loadTickets();
-  const idx = tickets.findIndex((t) => t.id === id);
-  if (idx === -1) return Promise.reject(new Error('Ticket not found'));
-  tickets[idx] = { ...tickets[idx], ...updates };
-  saveTickets(tickets);
-  return Promise.resolve(tickets[idx]);
+  return api.put(`/maintenance/tickets/${id}`, updates).then((res) => res.data);
 }
 
-/** Get vendors/contacts. Backend: GET /maintenance/vendors */
+/** Get vendors/contacts. */
 export function getVendors() {
-  return Promise.resolve(loadVendors());
+  return api.get('/maintenance/vendors').then((res) => res.data);
+}
+
+/** Create vendor/contact (admin only). */
+export function addVendor(data) {
+  return api
+    .post('/maintenance/vendors', {
+      name: data.name,
+      title: data.title || '',
+      phone: data.phone || '',
+      category: data.category || '',
+      image: data.image || null,
+    })
+    .then((res) => res.data);
+}
+
+/** Update vendor/contact (admin only). */
+export function updateVendor(id, data) {
+  return api
+    .put(`/maintenance/vendors/${id}`, {
+      name: data.name,
+      title: data.title,
+      phone: data.phone,
+      category: data.category,
+      image: data.image,
+    })
+    .then((res) => res.data);
+}
+
+/** Delete vendor/contact (admin only). */
+export function deleteVendor(id) {
+  return api.delete(`/maintenance/vendors/${id}`).then((res) => res.data);
 }

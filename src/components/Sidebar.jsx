@@ -1,19 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Wallet, Wrench, Calendar, Users, Menu, X } from 'lucide-react';
 import { useTranslation } from '../i18n';
+import { useAuthStore } from '../store/useAuthStore';
 import './Sidebar.css';
 
-const navItems = [
-  { to: '/dashboard', labelKey: 'sidebar.dashboard', icon: LayoutDashboard },
+const allNavItems = [
+  { to: '/dashboard', labelKey: 'sidebar.dashboard', icon: LayoutDashboard, adminOnly: true },
   { to: '/accounts', labelKey: 'sidebar.accounts', icon: Wallet },
   { to: '/maintenance', labelKey: 'sidebar.maintenance', icon: Wrench },
   { to: '/majlis-booking', labelKey: 'sidebar.majlisBooking', icon: Calendar },
-  { to: '/users', labelKey: 'sidebar.userManagement', icon: Users },
+  { to: '/users', labelKey: 'sidebar.userManagement', icon: Users, adminOnly: true },
 ];
 
 export function Sidebar() {
   const { t } = useTranslation();
+  const role = useAuthStore((s) => s.role);
+  const admin = role === 'Admin';
+  const navItems = useMemo(
+    () => allNavItems.filter((item) => !item.adminOnly || admin),
+    [admin]
+  );
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   function closeMobileMenu() {

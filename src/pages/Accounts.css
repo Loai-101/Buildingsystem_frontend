@@ -2,6 +2,7 @@
   margin: 0 0 var(--space-2xl);
   color: var(--color-text-muted);
   font-size: 1rem;
+  line-height: 1.5;
 }
 
 .back-link {
@@ -20,29 +21,211 @@
   text-decoration: none;
 }
 
+/* Years grid and cards */
 .accounts-year-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: var(--space-lg);
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-xl);
+}
+
+.year-card {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.year-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  border-color: var(--color-primary-muted);
+  transform: translateY(-2px);
+}
+
+.year-card:active {
+  transform: translateY(0);
 }
 
 .year-card .card-body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-xl);
+  padding: var(--space-xl) var(--space-lg);
+  gap: var(--space-md);
+  min-height: 88px;
 }
 
 .year-card-value {
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: 1.875rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
   color: var(--color-primary);
+  line-height: 1.2;
+}
+
+.year-card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+}
+
+.year-card-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: var(--color-bg-alt);
+  border: 1px solid var(--color-border-light);
+  border-radius: 50%;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.year-card-delete:hover {
+  color: #fff;
+  background: var(--color-error, #dc2626);
+  border-color: var(--color-error, #dc2626);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
 }
 
 .year-card-arrow {
+  color: var(--color-primary-muted);
+  flex-shrink: 0;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.year-card:hover .year-card-arrow {
+  color: var(--color-primary);
+  transform: translate(2px, 0);
+}
+
+.accounts-year-dashboard {
+  margin-bottom: var(--space-2xl);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+}
+
+.accounts-year-dashboard .card-body {
+  padding: var(--space-xl);
+}
+
+.year-dashboard-title {
+  margin: 0 0 var(--space-xl);
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+  padding-bottom: var(--space-md);
+  border-bottom: 2px solid var(--color-border-light);
+}
+
+.year-dashboard-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  align-items: stretch;
+}
+
+.year-dashboard-stat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-bg-alt);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border-light);
+  flex: 1;
+  min-width: 0;
+}
+
+.year-dashboard-stat--net {
+  flex: 1;
+  min-width: 140px;
+  background: var(--color-primary-subtle, rgba(59, 130, 246, 0.08));
+  border-color: var(--color-primary-muted, rgba(59, 130, 246, 0.2));
+}
+
+.year-dashboard-stat--net.year-dashboard-net--positive {
+  background: rgba(22, 163, 74, 0.1);
+  border-color: rgba(22, 163, 74, 0.3);
+}
+
+.year-dashboard-stat--net.year-dashboard-net--negative {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: rgba(220, 38, 38, 0.25);
+}
+
+.year-dashboard-stat-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.year-dashboard-icon {
+  flex-shrink: 0;
   color: var(--color-text-muted);
-  opacity: 0.8;
+}
+
+.year-dashboard-stat--income .year-dashboard-icon {
+  color: var(--color-success, #16a34a);
+}
+
+.year-dashboard-stat--expense .year-dashboard-icon {
+  color: var(--color-error, #dc2626);
+}
+
+.year-dashboard-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.year-dashboard-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.year-dashboard-amount {
+  font-style: normal;
+  font-weight: 600;
+}
+
+.year-dashboard-stat--net .year-dashboard-label {
+  font-size: 0.875rem;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--color-text-secondary);
+}
+
+.year-dashboard-stat--net .year-dashboard-value {
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+}
+
+.year-dashboard-net--positive .year-dashboard-value {
+  color: var(--color-success, #16a34a);
+}
+
+.year-dashboard-net--negative .year-dashboard-value {
+  color: var(--color-error, #dc2626);
+}
+
+.year-dashboard-stat--income .year-dashboard-value,
+.year-dashboard-stat--income .year-dashboard-amount {
+  color: var(--color-success, #16a34a);
+}
+
+.year-dashboard-stat--expense .year-dashboard-value,
+.year-dashboard-stat--expense .year-dashboard-amount {
+  color: var(--color-error, #dc2626);
 }
 
 .accounts-month-grid {
@@ -53,9 +236,16 @@
 
 .month-card .card-body {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+}
+
+.month-card-top {
+  display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-lg);
 }
 
 .month-card-name {
@@ -66,6 +256,46 @@
 .month-card-arrow {
   color: var(--color-text-muted);
   opacity: 0.8;
+}
+
+.month-card-net {
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding-top: var(--space-xs);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.month-card--positive {
+  border-left: 4px solid var(--color-success, #16a34a);
+  background: rgba(22, 163, 74, 0.06);
+}
+
+.month-card--positive .month-card-name,
+.month-card--positive .month-card-net {
+  color: var(--color-success, #16a34a);
+}
+
+.month-card--negative {
+  border-left: 4px solid var(--color-error, #dc2626);
+  background: rgba(220, 38, 38, 0.06);
+}
+
+.month-card--negative .month-card-name,
+.month-card--negative .month-card-net {
+  color: var(--color-error, #dc2626);
+}
+
+.month-card--neutral {
+  border-left: 4px solid var(--color-text-muted);
+  background: rgba(128, 128, 128, 0.05);
+}
+
+.month-card--neutral .month-card-name {
+  color: var(--color-text);
+}
+
+.month-card--neutral .month-card-net {
+  color: var(--color-text-muted);
 }
 
 .accounts-page .modal-actions {
@@ -83,13 +313,39 @@
     font-size: 0.9375rem;
   }
 
+  .year-dashboard-stats {
+    flex-direction: column;
+  }
+
+  .year-dashboard-stat {
+    min-width: 0;
+  }
+
+  .year-dashboard-title {
+    font-size: 1.125rem;
+    margin-bottom: var(--space-lg);
+  }
+
+  .accounts-year-dashboard .card-body {
+    padding: var(--space-lg);
+  }
+
+  .year-dashboard-stat {
+    padding: var(--space-md) var(--space-lg);
+  }
+
+  .year-dashboard-stat--net .year-dashboard-value {
+    font-size: 1.125rem;
+  }
+
   .accounts-year-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-md);
+    gap: var(--space-lg);
   }
 
   .year-card .card-body {
-    padding: var(--space-lg);
+    padding: var(--space-lg) var(--space-md);
+    min-height: 80px;
   }
 
   .year-card-value {
@@ -107,6 +363,10 @@
 
   .month-card-name {
     font-size: 0.9375rem;
+  }
+
+  .month-card-net {
+    font-size: 0.8125rem;
   }
 }
 
