@@ -51,6 +51,7 @@ export const en = {
     welcome: 'Welcome, {name}!',
     enterUsername: 'Please enter a username',
     invalidCredentials: 'Invalid username or password',
+    cannotConnectToServer: 'Cannot connect to server. Check your connection or try again in a moment (hosted backend may be waking up).',
   },
   userManagement: {
     title: 'User management',
@@ -320,6 +321,7 @@ export const ar = {
     welcome: 'مرحباً، {name}!',
     enterUsername: 'يرجى إدخال اسم المستخدم',
     invalidCredentials: 'اسم المستخدم أو كلمة المرور غير صحيحة',
+    cannotConnectToServer: 'لا يمكن الاتصال بالخادم. تحقق من الاتصال أو حاول مرة أخرى بعد قليل (الخادم قد يكون قيد التشغيل).',
   },
   userManagement: {
     title: 'إدارة المستخدمين',

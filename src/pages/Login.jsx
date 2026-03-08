@@ -53,7 +53,7 @@ export function Login() {
     } catch (err) {
       const isNetwork = err.code === 'ERR_NETWORK' || !err.response;
       if (isNetwork) {
-        toast.error('Cannot connect to server. Start the backend (npm run dev in Buildingsystem_backend).');
+        toast.error(t('login.cannotConnectToServer'));
       } else if (err.response?.status === 401) {
         toast.error(t('login.invalidCredentials'));
       } else if (err.response?.status === 403 && err.response?.data?.error === 'Account is deactivated') {
