@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
 import axios from 'axios';
+import api from './services/api';
 import { LanguageDirection } from './components/LanguageDirection';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -34,8 +35,20 @@ function useBackendHealthCheck() {
   }, []);
 }
 
+/** On deploy: pre-warm backend (e.g. Render cold start) so first data request is faster. */
+function useDeployPreWarm() {
+  const done = useRef(false);
+  useEffect(() => {
+    const apiBase = import.meta.env.VITE_API_URL || '';
+    if (apiBase.includes('localhost') || apiBase.includes('127.0.0.1') || done.current) return;
+    done.current = true;
+    api.get('/health').catch(() => {});
+  }, []);
+}
+
 function App() {
   useBackendHealthCheck();
+  useDeployPreWarm();
   return (
     <BrowserRouter>
       <LanguageDirection />

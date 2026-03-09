@@ -33,3 +33,19 @@ Vite loads **.env.development**, which points to `http://localhost:5000/api`. Op
 
 - **Local:** `npm run dev` uses .env.development → `VITE_API_URL=http://localhost:5000/api`. Run the backend for instant data.
 - **Hosted:** The build uses .env.production → Render backend. Vercel can override with its own env vars.
+
+## Local vs deploy data (separate)
+
+So that **any update on localhost stays separate from deploy**:
+
+1. In **Buildingsystem_backend**, create a file **`.env.local`** (it is gitignored and never pushed):
+   ```
+   USE_DEV_DATABASE=true
+   ```
+   Or copy from `.env.local.example`:  
+   `cp .env.local.example .env.local`
+
+2. When you run the backend locally (`npm run dev`), it loads `.env.local` and connects to the database **`buildingsystem_dev`** (same cluster, different name). The deployed server does not have `.env.local`, so it keeps using **`buildingsystem`** (production).
+
+- **Local:** Data you add (new year, records, users, etc.) stays in `buildingsystem_dev` and **does not appear** on the deployed site.
+- **Deploy:** Uses `buildingsystem`. Local and deploy data stay separate.

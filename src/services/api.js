@@ -1,11 +1,23 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
 
-const baseURL = import.meta.env.VITE_API_URL || '/api';
+const baseURL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '') || '/api';
 const isLocalBackend = baseURL.includes('localhost') || baseURL.includes('127.0.0.1');
+// Deploy (e.g. Render) can have cold start; 60s timeout so user gets clear error instead of endless loading. Local: no timeout.
+const timeout = isLocalBackend ? undefined : 60000;
+
+// Safeguard: production build must use full hosted API URL (local frontend → local backend; hosted → hosted backend)
+if (import.meta.env.PROD) {
+  if (isLocalBackend) {
+    console.error('[API] Production build is using a local backend URL. Set VITE_API_URL to your hosted API (e.g. in .env.production or Vercel env).');
+  } else if (!baseURL.startsWith('http')) {
+    console.error('[API] Production build has no full API URL (got relative or empty). Set VITE_API_URL in .env.production or Vercel env.');
+  }
+}
 
 const api = axios.create({
   baseURL,
+  timeout,
   headers: { 'Content-Type': 'application/json' },
 });
 
