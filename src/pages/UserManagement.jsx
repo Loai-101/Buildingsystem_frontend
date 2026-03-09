@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { Header } from '../components/Header';
+import { LottieLoading } from '../components/LottieLoading';
 import { Card, CardHeader, CardTitle, CardBody } from '../components/Cards/Card';
 import { Button } from '../components/Button';
 import { FormField } from '../components/FormField';
@@ -253,7 +254,7 @@ export function UserManagement() {
     return (
       <div className="user-management-page">
         <Header title={t('userManagement.title')} />
-        <p className="user-management-intro">{t('common.loading')}</p>
+        <div className="page-content"><LottieLoading message={t('common.loading')} /></div>
       </div>
     );
   }

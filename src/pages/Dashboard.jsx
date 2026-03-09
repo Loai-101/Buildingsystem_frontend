@@ -18,6 +18,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { Header } from '../components/Header';
+import { LottieLoading } from '../components/LottieLoading';
 import { Card, CardHeader, CardTitle, CardBody } from '../components/Cards/Card';
 import { getBookings } from '../services/bookingService';
 import { getRecordsByYear, getYearsWithRecords } from '../services/accountsService';
@@ -321,7 +322,7 @@ export function Dashboard() {
       <div className="dashboard-page">
         <Header title={t('dashboard.title')} />
         <div className="page-content">
-          <p className="loading-state">{t('common.loading')}</p>
+          <LottieLoading message={t('common.loading')} />
         </div>
       </div>
     );
@@ -343,7 +344,7 @@ export function Dashboard() {
       <div className="dashboard-page">
         <Header title={t('dashboard.title')} />
         <div className="page-content">
-          <p className="loading-state">{t('common.loading')}</p>
+          <LottieLoading message={t('common.loading')} />
         </div>
       </div>
     );

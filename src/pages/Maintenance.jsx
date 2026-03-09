@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { Header } from '../components/Header';
+import { LottieLoading } from '../components/LottieLoading';
 import { Card, CardHeader, CardTitle, CardBody } from '../components/Cards/Card';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modals/Modal';
@@ -167,7 +168,7 @@ export function Maintenance() {
     return (
       <div className="maintenance-page">
         <Header title={t('maintenance.title')} />
-        <div className="page-content"><p className="loading-state">{t('common.loading')}</p></div>
+        <div className="page-content"><LottieLoading message={t('common.loading')} /></div>
       </div>
     );
   }

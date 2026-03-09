@@ -300,6 +300,7 @@ export const en = {
     alreadyVoted: 'You have already voted on this proposal.',
     viewDetails: 'View details for {title}',
     noVotesYet: 'No votes yet.',
+    proposalsApiMissing: 'Proposals are not available. Please redeploy the backend (Render) with the latest code.',
   },
   roles: {
     resident: 'Resident',
@@ -604,6 +605,7 @@ export const ar = {
     alreadyVoted: 'لقد صوّتّ على هذا المقترح مسبقاً.',
     viewDetails: 'عرض تفاصيل {title}',
     noVotesYet: 'لا أصوات بعد.',
+    proposalsApiMissing: 'المقترحات غير متاحة. يرجى إعادة نشر الخادم (Render) بأحدث الكود.',
   },
   roles: {
     resident: 'مقيم',

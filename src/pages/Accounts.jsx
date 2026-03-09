@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Header } from '../components/Header';
+import { LottieLoading } from '../components/LottieLoading';
 import { Card, CardBody } from '../components/Cards/Card';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modals/Modal';
@@ -236,7 +237,7 @@ export function Accounts() {
       <div className="accounts-page">
         <Header title={t('accounts.title')} />
         <div className="page-content">
-          <p className="loading-state">{t('common.loading')}</p>
+          <LottieLoading message={t('common.loading')} />
         </div>
       </div>
     );
@@ -295,8 +296,7 @@ export function Accounts() {
             <p className="accounts-intro">{t('accounts.selectMonth', { year: selectedYear })}</p>
             {yearDashboardLoading ? (
               <div className="accounts-year-loading">
-                <div className="accounts-year-loading-spinner" aria-hidden />
-                <p className="loading-state">{t('accounts.loadingYearData')}</p>
+                <LottieLoading message={t('accounts.loadingYearData')} inline />
               </div>
             ) : (
               <>

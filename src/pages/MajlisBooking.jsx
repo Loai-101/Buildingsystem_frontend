@@ -3,6 +3,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Header } from '../components/Header';
+import { LottieLoading } from '../components/LottieLoading';
 import { Card, CardHeader, CardTitle, CardBody } from '../components/Cards/Card';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modals/Modal';
@@ -242,7 +243,7 @@ export function MajlisBooking() {
     return (
       <div className="majlis-booking-page">
         <Header title={t('majlisBooking.title')} />
-        <div className="page-content"><p className="loading-state">{t('common.loading')}</p></div>
+        <div className="page-content"><LottieLoading message={t('common.loading')} /></div>
       </div>
     );
   }

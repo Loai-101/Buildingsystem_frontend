@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { Header } from '../components/Header';
+import { LottieLoading } from '../components/LottieLoading';
 import { Card, CardHeader, CardTitle, CardBody } from '../components/Cards/Card';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modals/Modal';
@@ -25,6 +26,7 @@ export function Vote() {
   const isAdminRole = isAdmin();
   const [proposals, setProposals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [proposalsApiMissing, setProposalsApiMissing] = useState(false); // 404 from backend (e.g. not yet deployed)
   const [modalOpen, setModalOpen] = useState(false);
   const [detailProposal, setDetailProposal] = useState(null); // admin: selected proposal for detail view
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', variant: 'danger', confirmLabel: '', onConfirm: null });
@@ -63,12 +65,15 @@ export function Vote() {
         if (!cancelled) {
           cacheRef.current = arr;
           setProposals(arr);
+          setProposalsApiMissing(false);
         }
       })
       .catch((err) => {
         if (!cancelled) {
           setProposals([]);
-          toast.error(getApiErrorMessage(err) || t('common.noData'));
+          const is404 = err?.response?.status === 404;
+          setProposalsApiMissing(!!is404);
+          if (!is404) toast.error(getApiErrorMessage(err) || t('common.noData'));
         }
       })
       .finally(() => { if (!cancelled) setLoading(false); });
@@ -184,7 +189,7 @@ export function Vote() {
     return (
       <div className="vote-page">
         <Header title={t('vote.title')} />
-        <div className="page-content"><p className="loading-state">{t('common.loading')}</p></div>
+        <div className="page-content"><LottieLoading message={t('common.loading')} /></div>
       </div>
     );
   }
@@ -208,7 +213,9 @@ export function Vote() {
           </CardHeader>
           <CardBody>
             {proposals.length === 0 ? (
-              <p className="empty-state">{t('vote.noProposals')}</p>
+              <p className="empty-state">
+                {proposalsApiMissing ? t('vote.proposalsApiMissing') : t('vote.noProposals')}
+              </p>
             ) : isAdminRole ? (
               <ul className="proposal-list proposal-list--admin-cards">
                 {proposals.map((p) => (
