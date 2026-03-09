@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/useAuthStore';
 import { validateUser } from '../services/userService';
+import { getApiErrorMessage } from '../services/api';
 import { useTranslation } from '../i18n';
 import { Button } from '../components/Button';
 import { FormField } from '../components/FormField';
@@ -59,7 +60,7 @@ export function Login() {
       } else if (err.response?.status === 403 && err.response?.data?.error === 'Account is deactivated') {
         toast.error(t('userManagement.accountDeactivated'));
       } else {
-        toast.error(err.response?.data?.error || t('login.invalidCredentials'));
+        toast.error(getApiErrorMessage(err) || t('login.invalidCredentials'));
       }
     }
   }

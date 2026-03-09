@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { Header } from '../components/Header';
@@ -14,6 +14,7 @@ import {
   updateRecord,
   deleteRecord,
 } from '../services/accountsService';
+import { getApiErrorMessage } from '../services/api';
 import { useAppStore } from '../store/useAppStore';
 import { isAdmin } from '../store/useAuthStore';
 import { useTranslation } from '../i18n';
@@ -30,6 +31,7 @@ const CATEGORIES = {
 export function AccountsMonth() {
   const { year, month } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   const isAdminRole = isAdmin();
   const [records, setRecords] = useState([]);
@@ -41,6 +43,7 @@ export function AccountsMonth() {
   const [filterCategory, setFilterCategory] = useState(useAppStore.getState().accountsFilterCategory);
   const [filterSearch, setFilterSearch] = useState(useAppStore.getState().accountsFilterSearch);
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', variant: 'danger', confirmLabel: '', onConfirm: null });
+  const monthCacheRef = useRef(Object.create(null)); // { 'year-month': records[] } for instant show when revisiting
 
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm({
     defaultValues: { type: 'Income', category: '', date: '', description: '', amount: '', attachmentBase64: '' },
@@ -57,37 +60,60 @@ export function AccountsMonth() {
   }, [typeWatch, setValue]);
 
   function loadRecords() {
-    setLoading(true);
     getRecordsByYearMonth(year, month)
-      .then((list) => setRecords(Array.isArray(list) ? list : []))
+      .then((list) => {
+        const arr = Array.isArray(list) ? list : [];
+        const key = `${year}-${month}`;
+        monthCacheRef.current[key] = arr;
+        setRecords(arr);
+      })
       .catch(() => setRecords([]))
       .finally(() => setLoading(false));
   }
 
   useEffect(() => {
     if (!year || !month) return;
+    const key = `${year}-${month}`;
+    const monthNum = Number(month);
+    const yearNum = Number(year);
+
+    const prefetched = location.state?.prefetchedYearRecords;
+    const fromPrefetch = Array.isArray(prefetched) && prefetched.length >= 0 &&
+      prefetched.some((r) => Number(r.year) === yearNum);
+    const monthRecordsFromPrefetch = fromPrefetch
+      ? prefetched.filter((r) => Number(r.month) === monthNum)
+      : [];
+
+    if (key in monthCacheRef.current) {
+      const cached = monthCacheRef.current[key];
+      setRecords(Array.isArray(cached) ? cached : []);
+      setLoading(false);
+    } else if (monthRecordsFromPrefetch.length >= 0 && fromPrefetch) {
+      setRecords(monthRecordsFromPrefetch);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
     let cancelled = false;
-    const timeoutId = setTimeout(() => {
-      if (!cancelled) setLoading(false);
-    }, 10000);
-    setLoading(true);
     getRecordsByYearMonth(year, month)
       .then((list) => {
-        if (!cancelled) setRecords(Array.isArray(list) ? list : []);
+        const arr = Array.isArray(list) ? list : [];
+        if (!cancelled) {
+          monthCacheRef.current[key] = arr;
+          setRecords(arr);
+        }
       })
-      .catch(() => {
-        if (!cancelled) setRecords([]);
+      .catch((err) => {
+        if (!cancelled) {
+          setRecords([]);
+          toast.error(getApiErrorMessage(err) || t('common.noData'));
+        }
       })
       .finally(() => {
-        if (!cancelled) {
-          clearTimeout(timeoutId);
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       });
-    return () => {
-      cancelled = true;
-      clearTimeout(timeoutId);
-    };
+    return () => { cancelled = true; };
   }, [year, month]);
 
   useEffect(() => {
@@ -282,8 +308,8 @@ export function AccountsMonth() {
   return (
     <div className="accounts-month-page">
       <Header title={pageTitle}>
-        <button type="button" className="back-link" onClick={() => navigate('/accounts')}>
-          {t('accountsMonth.backToAccounts')}
+        <button type="button" className="back-link" onClick={() => navigate('/accounts', { state: { openYear: year } })}>
+          {t('accountsMonth.backToMonths')}
         </button>
         {isAdminRole && (
           <Button onClick={openAddModal}>

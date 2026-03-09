@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { Header } from '../components/Header';
@@ -14,6 +14,7 @@ import {
   getLoginHistory,
   setBulkActive,
 } from '../services/userService';
+import { getApiErrorMessage } from '../services/api';
 import { useAuthStore } from '../store/useAuthStore';
 import { useTranslation } from '../i18n';
 import { UserPlus, User, Camera, History, Eye, EyeOff } from 'lucide-react';
@@ -32,6 +33,7 @@ export function UserManagement() {
   const [editImage, setEditImage] = useState(null);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', variant: 'warning', confirmLabel: '', onConfirm: null });
+  const usersCacheRef = useRef(null); // [] or null for instant show when revisiting
 
   const isAdminRole = role != null && String(role).toLowerCase() === 'admin';
   const roleKnown = role !== null && role !== undefined;
@@ -40,18 +42,40 @@ export function UserManagement() {
     defaultValues: { username: '', password: '', role: 'Resident' },
   });
 
-  const loadUsers = useCallback(async () => {
-    try {
-      const list = await getUsers();
-      setUsers(Array.isArray(list) ? list : []);
-    } catch {
-      setUsers([]);
-    }
-  }, []);
+  const loadUsers = useCallback(() => {
+    getUsers()
+      .then((list) => {
+        const arr = Array.isArray(list) ? list : [];
+        usersCacheRef.current = arr;
+        setUsers(arr);
+      })
+      .catch((err) => {
+        setUsers([]);
+        toast.error(getApiErrorMessage(err) || t('common.noData'));
+      });
+  }, [t]);
 
   useEffect(() => {
-    loadUsers();
-  }, [loadUsers]);
+    if (usersCacheRef.current !== null) {
+      setUsers(Array.isArray(usersCacheRef.current) ? usersCacheRef.current : []);
+    }
+    let cancelled = false;
+    getUsers()
+      .then((list) => {
+        const arr = Array.isArray(list) ? list : [];
+        if (!cancelled) {
+          usersCacheRef.current = arr;
+          setUsers(arr);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setUsers([]);
+          toast.error(getApiErrorMessage(err) || t('common.noData'));
+        }
+      });
+    return () => { cancelled = true; };
+  }, [t]);
 
   async function onAddUser(data) {
     const username = (data.username || '').trim();

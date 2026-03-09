@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { Header } from '../components/Header';
@@ -8,6 +8,7 @@ import { Modal } from '../components/Modals/Modal';
 import { ConfirmDialog } from '../components/Modals/ConfirmDialog';
 import { FormField } from '../components/FormField';
 import { getVendors, addVendor, updateVendor, deleteVendor } from '../services/maintenanceService';
+import { getApiErrorMessage } from '../services/api';
 import { isAdmin } from '../store/useAuthStore';
 import { useTranslation } from '../i18n';
 import { Plus, Phone, User, Trash2, Camera } from 'lucide-react';
@@ -25,35 +26,47 @@ export function Maintenance() {
   const [editImage, setEditImage] = useState(null);
   const [viewingVendor, setViewingVendor] = useState(null);
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', variant: 'danger', confirmLabel: '', onConfirm: null });
+  const vendorsCacheRef = useRef(null); // [] or null: show from cache when revisiting
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
   function load() {
     getVendors()
-      .then((list) => setVendors(Array.isArray(list) ? list : []))
+      .then((list) => {
+        const arr = Array.isArray(list) ? list : [];
+        vendorsCacheRef.current = arr;
+        setVendors(arr);
+      })
       .catch(() => setVendors([]))
       .finally(() => setLoading(false));
   }
 
   useEffect(() => {
+    if (vendorsCacheRef.current !== null) {
+      setVendors(Array.isArray(vendorsCacheRef.current) ? vendorsCacheRef.current : []);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     let cancelled = false;
-    const timeoutId = setTimeout(() => {
-      if (!cancelled) setLoading(false);
-    }, 10000);
-    setLoading(true);
     getVendors()
-      .then((list) => { if (!cancelled) setVendors(Array.isArray(list) ? list : []); })
-      .catch(() => { if (!cancelled) setVendors([]); })
-      .finally(() => {
+      .then((list) => {
+        const arr = Array.isArray(list) ? list : [];
         if (!cancelled) {
-          clearTimeout(timeoutId);
-          setLoading(false);
+          vendorsCacheRef.current = arr;
+          setVendors(arr);
         }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setVendors([]);
+          toast.error(getApiErrorMessage(err) || t('common.noData'));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
       });
-    return () => {
-      cancelled = true;
-      clearTimeout(timeoutId);
-    };
+    return () => { cancelled = true; };
   }, []);
 
   function openAddVendorModal() {

@@ -1,6 +1,6 @@
 # Run the app locally (terminal)
 
-Your account data is in the database. To see it when you run the app on your machine:
+**Accounts and all data load the same way locally and on the hosted site.** Loading is driven only by the API response (no artificial timeouts).
 
 ## 1. Start the backend first
 
@@ -22,14 +22,14 @@ cd Buildingsystem_frontend
 npm run dev
 ```
 
-Open the URL shown (e.g. http://localhost:5173), log in, then open **Accounts**. You should see your years and records (e.g. 2025 with Rent, Maintenance, etc.).
+Vite loads **.env.development**, which points to `http://localhost:5000/api`. Open the URL shown (e.g. http://localhost:5173), log in, then open **Accounts**. Data loads as soon as the API responds (typically under 1 second when the backend is local).
 
-## 3. If Accounts is still empty
+## 3. If Accounts is empty or you see an error
 
-- Ensure **Buildingsystem_frontend/.env** has: `VITE_API_URL=http://localhost:5000/api`
-- Restart the frontend dev server after changing `.env`
-- If the backend is not running, you’ll see a toast: *"Backend not reachable. Start it to see data..."*
+- **Backend not running:** Start it (step 1). You may see a toast: *"Backend not reachable. Start it to see data..."*
+- **Wrong API URL:** When using `npm run dev`, the app uses **.env.development** (localhost). Do not delete that file.
 
-## Why the server (deployed) site works without this
+## Hosted (Vercel) vs local
 
-The deployed frontend (e.g. Vercel) uses the deployed backend (e.g. Render). Both are always on, so data loads. Locally, the frontend calls `http://localhost:5000/api`; if the backend isn’t running, no data is returned.
+- **Local:** `npm run dev` uses .env.development → `VITE_API_URL=http://localhost:5000/api`. Run the backend for instant data.
+- **Hosted:** The build uses .env.production → Render backend. Vercel can override with its own env vars.

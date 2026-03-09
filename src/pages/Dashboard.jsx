@@ -22,6 +22,7 @@ import { Card, CardHeader, CardTitle, CardBody } from '../components/Cards/Card'
 import { getBookings } from '../services/bookingService';
 import { getRecordsByYear, getYearsWithRecords } from '../services/accountsService';
 import { getTickets } from '../services/maintenanceService';
+import { getApiErrorMessage } from '../services/api';
 import { useTranslation } from '../i18n';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/useAuthStore';
@@ -161,6 +162,7 @@ export function Dashboard() {
   const [recordsLoading, setRecordsLoading] = useState(false);
   const filterYearFetched = useRef(null);
   const initialLoadDone = useRef(false);
+  const recordsCacheRef = useRef(Object.create(null)); // { year: records[] } for instant year switch
 
   const chartData = useMemo(
     () => buildChartData(rawData.records, rawData.bookings, rawData.tickets, t, { filterYear, filterMonth }),
@@ -208,13 +210,6 @@ export function Dashboard() {
     }
     const toArray = (v) => (Array.isArray(v) ? v : []);
     let cancelled = false;
-    const timeoutId = setTimeout(() => {
-      if (!cancelled) {
-        initialLoadDone.current = true;
-        setLoading(false);
-        setRecordsLoading(false);
-      }
-    }, 10000);
     (async () => {
       try {
         const [bookingsResult, ticketsResult, yearsResult] = await Promise.allSettled([
@@ -226,8 +221,11 @@ export function Dashboard() {
         const tickets = toArray(ticketsResult.status === 'fulfilled' ? ticketsResult.value : []);
         const years = toArray(yearsResult.status === 'fulfilled' ? yearsResult.value : []);
         if (cancelled) return;
-        const anyFailed = [bookingsResult, ticketsResult, yearsResult].some((r) => r.status === 'rejected');
-        if (anyFailed) toast.error(t('common.noData'));
+        const failed = [bookingsResult, ticketsResult, yearsResult].filter((r) => r.status === 'rejected');
+        if (failed.length) {
+          const msg = getApiErrorMessage(failed[0].reason) || t('common.noData');
+          toast.error(msg);
+        }
         setYearsList(years.length ? years : [now.getFullYear()]);
         setRawData((prev) => ({ ...prev, bookings, tickets }));
         const activities = [];
@@ -240,30 +238,34 @@ export function Dashboard() {
         activities.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
         setActivity(activities.slice(0, 20));
         const yearToFetch = filterYear ?? now.getFullYear();
-        setRecordsLoading(true);
+        const cachedRecords = recordsCacheRef.current[yearToFetch];
+        if (Array.isArray(cachedRecords)) {
+          setRawData((prev) => ({ ...prev, records: cachedRecords }));
+          setRecordsLoading(false);
+        } else {
+          setRecordsLoading(true);
+        }
         const recordsRes = await getRecordsByYear(yearToFetch).catch(() => []);
         if (cancelled) return;
+        const arr = toArray(recordsRes);
+        recordsCacheRef.current[yearToFetch] = arr;
         filterYearFetched.current = yearToFetch;
-        setRawData((prev) => ({ ...prev, records: toArray(recordsRes) }));
+        setRawData((prev) => ({ ...prev, records: arr }));
       } catch (err) {
         if (!cancelled) {
           setRawData({ records: [], bookings: [], tickets: [] });
           setActivity([]);
-          toast.error(t('common.noData'));
+          toast.error(getApiErrorMessage(err) || t('common.noData'));
         }
       } finally {
         if (!cancelled) {
-          clearTimeout(timeoutId);
           initialLoadDone.current = true;
           setLoading(false);
           setRecordsLoading(false);
         }
       }
     })();
-    return () => {
-      cancelled = true;
-      clearTimeout(timeoutId);
-    };
+    return () => { cancelled = true; };
   }, [role]);
 
   useEffect(() => {
@@ -271,13 +273,28 @@ export function Dashboard() {
     const yearToFetch = filterYear ?? now.getFullYear();
     if (filterYearFetched.current === yearToFetch) return;
     filterYearFetched.current = yearToFetch;
+    const cached = recordsCacheRef.current[yearToFetch];
+    if (Array.isArray(cached)) {
+      setRawData((prev) => ({ ...prev, records: cached }));
+      setRecordsLoading(false);
+    } else {
+      setRecordsLoading(true);
+    }
     let cancelled = false;
-    setRecordsLoading(true);
     getRecordsByYear(yearToFetch)
       .then((list) => {
-        if (!cancelled) setRawData((prev) => ({ ...prev, records: Array.isArray(list) ? list : [] }));
+        const arr = Array.isArray(list) ? list : [];
+        if (!cancelled) {
+          recordsCacheRef.current[yearToFetch] = arr;
+          setRawData((prev) => ({ ...prev, records: arr }));
+        }
       })
-      .catch(() => { if (!cancelled) setRawData((prev) => ({ ...prev, records: [] })); })
+      .catch(() => {
+        if (!cancelled) {
+          recordsCacheRef.current[yearToFetch] = [];
+          setRawData((prev) => ({ ...prev, records: [] }));
+        }
+      })
       .finally(() => { if (!cancelled) setRecordsLoading(false); });
     return () => { cancelled = true; };
   }, [filterYear, role]);

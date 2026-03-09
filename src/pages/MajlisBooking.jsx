@@ -9,6 +9,7 @@ import { Modal } from '../components/Modals/Modal';
 import { ConfirmDialog } from '../components/Modals/ConfirmDialog';
 import { FormField } from '../components/FormField';
 import { getBookings, createBooking, updateBookingStatus, updateBooking, getApprovedDates } from '../services/bookingService';
+import { getApiErrorMessage } from '../services/api';
 import { useAuthStore, isAdmin } from '../store/useAuthStore';
 import { useTranslation } from '../i18n';
 import { useForm } from 'react-hook-form';
@@ -35,14 +36,17 @@ export function MajlisBooking() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [viewBooking, setViewBooking] = useState(null);
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', variant: 'primary', confirmLabel: '', onConfirm: null });
+  const bookingCacheRef = useRef(null); // { bookings: [], approvedDates: [] } or null
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
   function load() {
     Promise.all([getBookings(), getApprovedDates()])
       .then(([b, dates]) => {
-        setBookings(Array.isArray(b) ? b : []);
-        setApprovedDates(Array.isArray(dates) ? dates : []);
+        const data = { bookings: Array.isArray(b) ? b : [], approvedDates: Array.isArray(dates) ? dates : [] };
+        bookingCacheRef.current = data;
+        setBookings(data.bookings);
+        setApprovedDates(data.approvedDates);
       })
       .catch(() => {
         setBookings([]);
@@ -52,34 +56,35 @@ export function MajlisBooking() {
   }
 
   useEffect(() => {
+    if (bookingCacheRef.current !== null) {
+      const c = bookingCacheRef.current;
+      setBookings(Array.isArray(c.bookings) ? c.bookings : []);
+      setApprovedDates(Array.isArray(c.approvedDates) ? c.approvedDates : []);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     let cancelled = false;
-    const timeoutId = setTimeout(() => {
-      if (!cancelled) setLoading(false);
-    }, 10000);
-    setLoading(true);
     Promise.all([getBookings(), getApprovedDates()])
       .then(([b, dates]) => {
+        const data = { bookings: Array.isArray(b) ? b : [], approvedDates: Array.isArray(dates) ? dates : [] };
         if (!cancelled) {
-          setBookings(Array.isArray(b) ? b : []);
-          setApprovedDates(Array.isArray(dates) ? dates : []);
+          bookingCacheRef.current = data;
+          setBookings(data.bookings);
+          setApprovedDates(data.approvedDates);
         }
       })
-      .catch(() => {
+      .catch((err) => {
         if (!cancelled) {
           setBookings([]);
           setApprovedDates([]);
+          toast.error(getApiErrorMessage(err) || t('common.noData'));
         }
       })
       .finally(() => {
-        if (!cancelled) {
-          clearTimeout(timeoutId);
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       });
-    return () => {
-      cancelled = true;
-      clearTimeout(timeoutId);
-    };
+    return () => { cancelled = true; };
   }, []);
 
   const events = bookings.map((b) => {
