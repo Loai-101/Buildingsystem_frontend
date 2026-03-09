@@ -308,7 +308,7 @@ export function AccountsMonth() {
   return (
     <div className="accounts-month-page">
       <Header title={pageTitle}>
-        <button type="button" className="back-link" onClick={() => navigate('/accounts', { state: { openYear: year } })}>
+        <button type="button" className="back-link" onClick={() => navigate('/accounts', { state: { openYear: Number(year) } })}>
           {t('accountsMonth.backToMonths')}
         </button>
         {isAdminRole && (

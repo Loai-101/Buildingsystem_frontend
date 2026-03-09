@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   BarChart,
   Bar,
@@ -145,6 +145,7 @@ const MONTH_KEYS = ['january', 'february', 'march', 'april', 'may', 'june', 'jul
 export function Dashboard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const role = useAuthStore((s) => s.role);
   const now = new Date();
   const [filterYear, setFilterYear] = useState(now.getFullYear());
@@ -163,6 +164,19 @@ export function Dashboard() {
   const filterYearFetched = useRef(null);
   const initialLoadDone = useRef(false);
   const recordsCacheRef = useRef(Object.create(null)); // { year: records[] } for instant year switch
+
+  // Refetch years when Dashboard is shown so "Filter by" includes years added on Accounts
+  useEffect(() => {
+    if (role !== 'Admin' || location.pathname !== '/dashboard') return;
+    let cancelled = false;
+    getYearsWithRecords()
+      .then((list) => {
+        if (!cancelled && Array.isArray(list) && list.length) setYearsList(list);
+        else if (!cancelled) setYearsList([now.getFullYear()]);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [location.pathname, role]);
 
   const chartData = useMemo(
     () => buildChartData(rawData.records, rawData.bookings, rawData.tickets, t, { filterYear, filterMonth }),

@@ -34,6 +34,16 @@ export function Accounts() {
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', variant: 'danger', confirmLabel: '', onConfirm: null });
   const yearCacheRef = useRef(Object.create(null)); // { yearNum: records[] } for instant show when revisiting
 
+  // Open months view for a specific year when navigating back from a month (e.g. "Back to months")
+  useEffect(() => {
+    const openYear = location.state?.openYear;
+    if (openYear != null && Number.isInteger(Number(openYear))) {
+      setView('months');
+      setSelectedYear(Number(openYear));
+      navigate('/accounts', { replace: true, state: {} });
+    }
+  }, [location.state?.openYear, navigate]);
+
   function loadYears() {
     if (!token) return;
     setLoading(true);
@@ -46,16 +56,6 @@ export function Accounts() {
       })
       .finally(() => setLoading(false));
   }
-
-  useEffect(() => {
-    const openYear = location.state?.openYear;
-    const y = openYear != null && openYear !== '' ? Number(openYear) : null;
-    if (Number.isInteger(y) && y >= 2000 && y <= 2100) {
-      setSelectedYear(y);
-      setView('months');
-      navigate('/accounts', { replace: true, state: {} });
-    }
-  }, [location.state, navigate]);
 
   useEffect(() => {
     if (!token) {
