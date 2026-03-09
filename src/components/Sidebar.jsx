@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Wallet, Wrench, Calendar, Users, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Wallet, Wrench, Calendar, Vote, Users, Menu, X } from 'lucide-react';
 import { useTranslation } from '../i18n';
 import { useAuthStore } from '../store/useAuthStore';
 import './Sidebar.css';
@@ -10,6 +10,7 @@ const allNavItems = [
   { to: '/accounts', labelKey: 'sidebar.accounts', icon: Wallet },
   { to: '/maintenance', labelKey: 'sidebar.maintenance', icon: Wrench },
   { to: '/majlis-booking', labelKey: 'sidebar.majlisBooking', icon: Calendar },
+  { to: '/vote', labelKey: 'sidebar.vote', icon: Vote },
   { to: '/users', labelKey: 'sidebar.userManagement', icon: Users, adminOnly: true },
 ];
 

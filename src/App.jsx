@@ -13,6 +13,7 @@ import { Accounts } from './pages/Accounts';
 import { AccountsMonth } from './pages/AccountsMonth';
 import { Maintenance } from './pages/Maintenance';
 import { MajlisBooking } from './pages/MajlisBooking';
+import { Vote } from './pages/Vote';
 import { UserManagement } from './pages/UserManagement';
 
 function RoleBasedRedirect() {
@@ -69,6 +70,7 @@ function App() {
           <Route path="accounts/:year/:month" element={<AccountsMonth />} />
           <Route path="maintenance" element={<Maintenance />} />
           <Route path="majlis-booking" element={<MajlisBooking />} />
+          <Route path="vote" element={<Vote />} />
           <Route path="users" element={<UserManagement />} />
         </Route>
         <Route path="*" element={<RoleBasedRedirect />} />
