@@ -296,6 +296,10 @@ export const en = {
     voteRecorded: 'Vote recorded',
     closed: 'Closed',
     open: 'Open',
+    youVoted: 'You voted',
+    alreadyVoted: 'You have already voted on this proposal.',
+    viewDetails: 'View details for {title}',
+    noVotesYet: 'No votes yet.',
   },
   roles: {
     resident: 'Resident',
@@ -596,6 +600,10 @@ export const ar = {
     voteRecorded: 'تم تسجيل التصويت',
     closed: 'مغلق',
     open: 'مفتوح',
+    youVoted: 'لقد صوّتّ',
+    alreadyVoted: 'لقد صوّتّ على هذا المقترح مسبقاً.',
+    viewDetails: 'عرض تفاصيل {title}',
+    noVotesYet: 'لا أصوات بعد.',
   },
   roles: {
     resident: 'مقيم',

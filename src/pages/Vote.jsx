@@ -26,6 +26,7 @@ export function Vote() {
   const [proposals, setProposals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [detailProposal, setDetailProposal] = useState(null); // admin: selected proposal for detail view
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', variant: 'danger', confirmLabel: '', onConfirm: null });
   const votingRef = useRef(Object.create(null)); // avoid double submit
   const cacheRef = useRef(null);
@@ -101,20 +102,36 @@ export function Vote() {
     if (!p || p.status === 'closed') return;
     votingRef.current[proposalId] = true;
     voteProposal(proposalId, vote)
-      .then(({ approveCount, rejectCount }) => {
+      .then(({ approveCount, rejectCount, userVote: newUserVote }) => {
         setProposals((prev) =>
           prev.map((x) =>
-            x.id === proposalId ? { ...x, approveCount, rejectCount } : x
+            x.id === proposalId ? { ...x, approveCount, rejectCount, userVote: newUserVote ?? vote } : x
           )
         );
         if (cacheRef.current) {
           cacheRef.current = cacheRef.current.map((x) =>
-            x.id === proposalId ? { ...x, approveCount, rejectCount } : x
+            x.id === proposalId ? { ...x, approveCount, rejectCount, userVote: newUserVote ?? vote } : x
           );
         }
         toast.success(t('vote.voteRecorded'));
       })
-      .catch((err) => toast.error(getApiErrorMessage(err) || t('common.noData')))
+      .catch((err) => {
+        if (err.response?.status === 409 && err.response?.data?.userVote) {
+          toast.error(t('vote.alreadyVoted'));
+          setProposals((prev) =>
+            prev.map((x) =>
+              x.id === proposalId ? { ...x, userVote: err.response.data.userVote } : x
+            )
+          );
+          if (cacheRef.current) {
+            cacheRef.current = cacheRef.current.map((x) =>
+              x.id === proposalId ? { ...x, userVote: err.response.data.userVote } : x
+            );
+          }
+        } else {
+          toast.error(getApiErrorMessage(err) || t('common.noData'));
+        }
+      })
       .finally(() => { delete votingRef.current[proposalId]; });
   }
 
@@ -146,6 +163,7 @@ export function Vote() {
         deleteProposal(p.id)
           .then(() => {
             toast.success(t('vote.proposalDeleted'));
+            setDetailProposal((prev) => (prev?.id === p.id ? null : prev));
             setProposals((prev) => prev.filter((x) => x.id !== p.id));
             cacheRef.current = (cacheRef.current || []).filter((x) => x.id !== p.id);
           })
@@ -154,6 +172,7 @@ export function Vote() {
       },
     });
   }
+
 
   const formatDate = (d) => {
     if (!d) return '—';
@@ -190,6 +209,27 @@ export function Vote() {
           <CardBody>
             {proposals.length === 0 ? (
               <p className="empty-state">{t('vote.noProposals')}</p>
+            ) : isAdminRole ? (
+              <ul className="proposal-list proposal-list--admin-cards">
+                {proposals.map((p) => (
+                  <li key={p.id}>
+                    <button
+                      type="button"
+                      className={`proposal-card proposal-card--compact proposal-card--${p.status}`}
+                      onClick={() => setDetailProposal(p)}
+                      aria-label={t('vote.viewDetails', { title: p.title })}
+                    >
+                      <span className="proposal-card-compact-title">{p.title}</span>
+                      <span className="proposal-card-compact-meta">
+                        {p.status === 'closed' && <span className="proposal-status-badge">{t('vote.closed')}</span>}
+                        <span className="proposal-count-inline">
+                          <ThumbsUp size={14} /> {p.approveCount ?? 0} · <ThumbsDown size={14} /> {p.rejectCount ?? 0}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
             ) : (
               <ul className="proposal-list">
                 {proposals.map((p) => (
@@ -202,7 +242,6 @@ export function Vote() {
                         <span className="proposal-date">{formatDate(p.createdAt)}</span>
                         {p.status === 'closed' && <span className="proposal-status-badge">{t('vote.closed')}</span>}
                       </div>
-                      {/* Resident: only counts */}
                       <div className="proposal-counts">
                         <span className="proposal-count proposal-count--approve">
                           <ThumbsUp size={16} aria-hidden /> {p.approveCount ?? 0} {t('vote.approve')}
@@ -211,79 +250,35 @@ export function Vote() {
                           <ThumbsDown size={16} aria-hidden /> {p.rejectCount ?? 0} {t('vote.reject')}
                         </span>
                       </div>
-                      {p.status === 'open' && !isAdminRole && (
+                      {p.status === 'open' && (
                         <div className="proposal-vote-actions">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => handleVote(p.id, 'approve')}
-                          >
-                            <ThumbsUp size={18} />
-                            {t('vote.approve')}
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => handleVote(p.id, 'reject')}
-                          >
-                            <ThumbsDown size={18} />
-                            {t('vote.reject')}
-                          </Button>
+                          {p.userVote ? (
+                            <p className="proposal-you-voted">
+                              {t('vote.youVoted')}: {p.userVote === 'approve' ? t('vote.approve') : t('vote.reject')}
+                            </p>
+                          ) : (
+                            <>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => handleVote(p.id, 'approve')}
+                              >
+                                <ThumbsUp size={18} />
+                                {t('vote.approve')}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => handleVote(p.id, 'reject')}
+                              >
+                                <ThumbsDown size={18} />
+                                {t('vote.reject')}
+                              </Button>
+                            </>
+                          )}
                         </div>
                       )}
                     </div>
-                    {/* Admin: vote details table */}
-                    {isAdminRole && (
-                      <>
-                        <div className="proposal-admin-actions">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => handleCloseReopen(p)}
-                            title={p.status === 'closed' ? t('vote.reopen') : t('vote.close')}
-                          >
-                            {p.status === 'closed' ? <Unlock size={16} /> : <Lock size={16} />}
-                            {p.status === 'closed' ? t('vote.reopen') : t('vote.close')}
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="proposal-delete-btn"
-                            onClick={() => onDeleteProposal(p)}
-                            title={t('common.delete')}
-                          >
-                            <Trash2 size={16} />
-                          </Button>
-                        </div>
-                        {Array.isArray(p.votes) && p.votes.length > 0 && (
-                          <div className="proposal-votes-detail">
-                            <h4 className="proposal-votes-detail-title">{t('vote.voteDetails')}</h4>
-                            <table className="proposal-votes-table" role="grid">
-                              <thead>
-                                <tr>
-                                  <th>{t('vote.resident')}</th>
-                                  <th>{t('vote.vote')}</th>
-                                  <th>{t('vote.votedAt')}</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {p.votes.map((v, i) => (
-                                  <tr key={i}>
-                                    <td>{v.username}</td>
-                                    <td>
-                                      <span className={`vote-badge vote-badge--${v.vote}`}>
-                                        {v.vote === 'approve' ? t('vote.approve') : t('vote.reject')}
-                                      </span>
-                                    </td>
-                                    <td>{formatDate(v.votedAt)}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-                      </>
-                    )}
                   </li>
                 ))}
               </ul>
@@ -302,6 +297,85 @@ export function Vote() {
         confirmLabel={confirm.confirmLabel}
         cancelLabel={t('common.cancel')}
       />
+
+      {isAdminRole && detailProposal && (() => {
+        const p = proposals.find((x) => x.id === detailProposal.id) ?? detailProposal;
+        return (
+          <Modal open={true} onClose={() => setDetailProposal(null)} title={p.title}>
+            <div className="proposal-detail-modal">
+              {p.description && <p className="proposal-description">{p.description}</p>}
+              <div className="proposal-meta">
+                <span className="proposal-created">{t('vote.by')} {p.createdBy}</span>
+                <span className="proposal-date">{formatDate(p.createdAt)}</span>
+                {p.status === 'closed' && <span className="proposal-status-badge">{t('vote.closed')}</span>}
+                {p.status !== 'closed' && <span className="proposal-status-badge proposal-status-badge--open">{t('vote.open')}</span>}
+              </div>
+              <div className="proposal-counts">
+                <span className="proposal-count proposal-count--approve">
+                  <ThumbsUp size={16} aria-hidden /> {p.approveCount ?? 0} {t('vote.approve')}
+                </span>
+                <span className="proposal-count proposal-count--reject">
+                  <ThumbsDown size={16} aria-hidden /> {p.rejectCount ?? 0} {t('vote.reject')}
+                </span>
+              </div>
+              <div className="proposal-detail-actions">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleCloseReopen(p)}
+                  title={p.status === 'closed' ? t('vote.reopen') : t('vote.close')}
+                >
+                  {p.status === 'closed' ? <Unlock size={16} /> : <Lock size={16} />}
+                  {p.status === 'closed' ? t('vote.reopen') : t('vote.close')}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="proposal-delete-btn"
+                  onClick={() => onDeleteProposal(p)}
+                  title={t('common.delete')}
+                >
+                  <Trash2 size={16} />
+                  {t('common.delete')}
+                </Button>
+              </div>
+              {Array.isArray(p.votes) && p.votes.length > 0 && (
+                <div className="proposal-votes-detail">
+                  <h4 className="proposal-votes-detail-title">{t('vote.voteDetails')}</h4>
+                  <table className="proposal-votes-table" role="grid">
+                    <thead>
+                      <tr>
+                        <th>{t('vote.resident')}</th>
+                        <th>{t('vote.vote')}</th>
+                        <th>{t('vote.votedAt')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {p.votes.map((v, i) => (
+                        <tr key={i}>
+                          <td>{v.username}</td>
+                          <td>
+                            <span className={`vote-badge vote-badge--${v.vote}`}>
+                              {v.vote === 'approve' ? t('vote.approve') : t('vote.reject')}
+                            </span>
+                          </td>
+                          <td>{formatDate(v.votedAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {(!p.votes || p.votes.length === 0) && (
+                <p className="proposal-detail-no-votes">{t('vote.noVotesYet')}</p>
+              )}
+              <div className="modal-actions">
+                <Button type="button" variant="outline" onClick={() => setDetailProposal(null)}>{t('common.close')}</Button>
+              </div>
+            </div>
+          </Modal>
+        );
+      })()}
 
       {isAdminRole && (
         <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('vote.addProposal')}>
