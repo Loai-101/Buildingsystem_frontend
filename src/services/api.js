@@ -55,7 +55,8 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    logApiError(err, err.config);
+    const isProposals404 = err.config?.url?.includes('/proposals') && err.response?.status === 404;
+    if (!isProposals404) logApiError(err, err.config);
     if (err.response?.status === 401) {
       useAuthStore.getState().logout();
       window.location.href = '/login';
