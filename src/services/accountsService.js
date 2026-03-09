@@ -10,12 +10,26 @@ export function getAllRecords() {
 
 /** Get records for a specific year and month. */
 export function getRecordsByYearMonth(year, month) {
-  return api.get('/accounts', { params: { year, month } }).then((res) => res.data);
+  const y = year != null && year !== '' ? Number(year) : null;
+  const m = month != null && month !== '' ? Number(month) : null;
+  const params = {};
+  if (y != null && !Number.isNaN(y) && Number.isInteger(y)) params.year = y;
+  if (m != null && !Number.isNaN(m) && Number.isInteger(m)) params.month = m;
+  return api.get('/accounts', { params }).then((res) => {
+    const data = res.data;
+    return Array.isArray(data) ? data : (data && Array.isArray(data.records) ? data.records : []);
+  });
 }
 
 /** Get all records for a year (for year dashboard). */
 export function getRecordsByYear(year) {
-  return api.get('/accounts', { params: { year } }).then((res) => res.data);
+  const y = year != null && year !== '' ? Number(year) : null;
+  const params = {};
+  if (y != null && !Number.isNaN(y) && Number.isInteger(y)) params.year = y;
+  return api.get('/accounts', { params }).then((res) => {
+    const data = res.data;
+    return Array.isArray(data) ? data : (data && Array.isArray(data.records) ? data.records : []);
+  });
 }
 
 /** Add a new record. */
@@ -46,7 +60,12 @@ export function deleteRecord(id) {
 
 /** Get distinct years: from records + admin-added years. */
 export function getYearsWithRecords() {
-  return api.get('/accounts/years').then((res) => res.data);
+  return api.get('/accounts/years').then((res) => {
+    const data = res.data;
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.years)) return data.years;
+    return [];
+  });
 }
 
 /** Admin only: add a year so it appears in the list. */

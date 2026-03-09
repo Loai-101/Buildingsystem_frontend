@@ -29,11 +29,31 @@ export function Maintenance() {
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
   function load() {
-    getVendors().then(setVendors).finally(() => setLoading(false));
+    getVendors()
+      .then((list) => setVendors(Array.isArray(list) ? list : []))
+      .catch(() => setVendors([]))
+      .finally(() => setLoading(false));
   }
 
   useEffect(() => {
-    load();
+    let cancelled = false;
+    const timeoutId = setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 10000);
+    setLoading(true);
+    getVendors()
+      .then((list) => { if (!cancelled) setVendors(Array.isArray(list) ? list : []); })
+      .catch(() => { if (!cancelled) setVendors([]); })
+      .finally(() => {
+        if (!cancelled) {
+          clearTimeout(timeoutId);
+          setLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   function openAddVendorModal() {

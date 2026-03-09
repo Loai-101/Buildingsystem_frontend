@@ -202,9 +202,19 @@ export function Dashboard() {
   }, [activity, filterYear, filterMonth]);
 
   useEffect(() => {
-    if (role !== 'Admin') return;
+    if (role !== 'Admin') {
+      setLoading(false);
+      return;
+    }
     const toArray = (v) => (Array.isArray(v) ? v : []);
     let cancelled = false;
+    const timeoutId = setTimeout(() => {
+      if (!cancelled) {
+        initialLoadDone.current = true;
+        setLoading(false);
+        setRecordsLoading(false);
+      }
+    }, 10000);
     (async () => {
       try {
         const [bookingsResult, ticketsResult, yearsResult] = await Promise.allSettled([
@@ -243,14 +253,18 @@ export function Dashboard() {
         }
       } finally {
         if (!cancelled) {
+          clearTimeout(timeoutId);
           initialLoadDone.current = true;
           setLoading(false);
           setRecordsLoading(false);
         }
       }
     })();
-    return () => { cancelled = true; };
-  }, [t, role]);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [role]);
 
   useEffect(() => {
     if (role !== 'Admin' || !initialLoadDone.current) return;
@@ -271,6 +285,16 @@ export function Dashboard() {
   const isAdmin = role === 'Admin';
   const roleKnown = role !== null && role !== undefined;
   if (roleKnown && !isAdmin) return null;
+  if (!roleKnown) {
+    return (
+      <div className="dashboard-page">
+        <Header title={t('dashboard.title')} />
+        <div className="page-content">
+          <p className="loading-state">{t('common.loading')}</p>
+        </div>
+      </div>
+    );
+  }
 
   const availableYears = useMemo(() => {
     const years = new Set(yearsList.map(Number).filter(Boolean));

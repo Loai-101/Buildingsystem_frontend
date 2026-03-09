@@ -5,7 +5,7 @@ import api from './api';
 
 /** Get all bookings. */
 export function getBookings() {
-  return api.get('/bookings').then((res) => res.data);
+  return api.get('/bookings').then((res) => (Array.isArray(res.data) ? res.data : []));
 }
 
 /** Create booking request (pending). */
@@ -43,5 +43,5 @@ export function updateBooking(id, updates) {
 
 /** Get approved dates (for calendar blocking). */
 export function getApprovedDates() {
-  return api.get('/bookings/approved-dates').then((res) => res.data);
+  return api.get('/bookings/approved-dates').then((res) => (Array.isArray(res.data) ? res.data : []));
 }

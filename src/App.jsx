@@ -1,5 +1,7 @@
+import { useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { Toaster, toast } from 'react-hot-toast';
+import axios from 'axios';
 import { LanguageDirection } from './components/LanguageDirection';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -17,7 +19,23 @@ function RoleBasedRedirect() {
   return <Navigate to={role === 'Resident' ? '/accounts' : '/dashboard'} replace />;
 }
 
+function useBackendHealthCheck() {
+  const warned = useRef(false);
+  useEffect(() => {
+    const apiBase = import.meta.env.VITE_API_URL || '';
+    if (!apiBase.includes('localhost') || warned.current) return;
+    const healthUrl = apiBase.replace(/\/api\/?$/, '') + '/api/health';
+    axios.get(healthUrl, { timeout: 3000 }).catch(() => {
+      if (!warned.current) {
+        warned.current = true;
+        toast.error('Backend not reachable. Start it to see data: in Buildingsystem_backend run "npm run dev"', { duration: 6000 });
+      }
+    });
+  }, []);
+}
+
 function App() {
+  useBackendHealthCheck();
   return (
     <BrowserRouter>
       <LanguageDirection />

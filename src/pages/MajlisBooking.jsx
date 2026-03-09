@@ -39,14 +39,47 @@ export function MajlisBooking() {
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
   function load() {
-    Promise.all([getBookings(), getApprovedDates()]).then(([b, dates]) => {
-      setBookings(b);
-      setApprovedDates(dates);
-    }).finally(() => setLoading(false));
+    Promise.all([getBookings(), getApprovedDates()])
+      .then(([b, dates]) => {
+        setBookings(Array.isArray(b) ? b : []);
+        setApprovedDates(Array.isArray(dates) ? dates : []);
+      })
+      .catch(() => {
+        setBookings([]);
+        setApprovedDates([]);
+      })
+      .finally(() => setLoading(false));
   }
 
   useEffect(() => {
-    load();
+    let cancelled = false;
+    const timeoutId = setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 10000);
+    setLoading(true);
+    Promise.all([getBookings(), getApprovedDates()])
+      .then(([b, dates]) => {
+        if (!cancelled) {
+          setBookings(Array.isArray(b) ? b : []);
+          setApprovedDates(Array.isArray(dates) ? dates : []);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setBookings([]);
+          setApprovedDates([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          clearTimeout(timeoutId);
+          setLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   const events = bookings.map((b) => {

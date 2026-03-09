@@ -65,7 +65,29 @@ export function AccountsMonth() {
   }
 
   useEffect(() => {
-    loadRecords();
+    if (!year || !month) return;
+    let cancelled = false;
+    const timeoutId = setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 10000);
+    setLoading(true);
+    getRecordsByYearMonth(year, month)
+      .then((list) => {
+        if (!cancelled) setRecords(Array.isArray(list) ? list : []);
+      })
+      .catch(() => {
+        if (!cancelled) setRecords([]);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          clearTimeout(timeoutId);
+          setLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
   }, [year, month]);
 
   useEffect(() => {

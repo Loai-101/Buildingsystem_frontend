@@ -5,7 +5,7 @@ import api from './api';
 
 /** Get all tickets. */
 export function getTickets() {
-  return api.get('/maintenance/tickets').then((res) => res.data);
+  return api.get('/maintenance/tickets').then((res) => (Array.isArray(res.data) ? res.data : []));
 }
 
 /** Create ticket. */
@@ -27,7 +27,7 @@ export function updateTicket(id, updates) {
 
 /** Get vendors/contacts. */
 export function getVendors() {
-  return api.get('/maintenance/vendors').then((res) => res.data);
+  return api.get('/maintenance/vendors').then((res) => (Array.isArray(res.data) ? res.data : []));
 }
 
 /** Create vendor/contact (admin only). */

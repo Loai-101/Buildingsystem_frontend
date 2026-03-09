@@ -19,6 +19,7 @@ const currentYear = new Date().getFullYear();
 export function Accounts() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const token = useAuthStore((s) => s.token);
   const admin = isAdmin();
   const [view, setView] = useState('years');
   const [years, setYears] = useState([]);
@@ -30,32 +31,67 @@ export function Accounts() {
   const [yearDashboardLoading, setYearDashboardLoading] = useState(false);
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', variant: 'danger', confirmLabel: '', onConfirm: null });
 
-  function loadYears() {
+  useEffect(() => {
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    const timeoutId = setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 10000);
     setLoading(true);
     getYearsWithRecords()
-      .then(setYears)
-      .catch(() => {
-        setYears([]);
-        toast.error(t('common.noData'));
+      .then((list) => {
+        if (!cancelled) setYears(Array.isArray(list) ? list : []);
       })
-      .finally(() => setLoading(false));
-  }
+      .catch((err) => {
+        if (!cancelled) {
+          setYears([]);
+          const msg = err.response?.status === 401 ? t('login.invalidCredentials') : t('common.noData');
+          toast.error(msg);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          clearTimeout(timeoutId);
+          setLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [token]);
 
   useEffect(() => {
-    loadYears();
-  }, []);
-
-  useEffect(() => {
-    if (view !== 'months' || !selectedYear) {
+    if (!token || view !== 'months' || !selectedYear) {
       setYearRecords([]);
       return;
     }
+    let cancelled = false;
+    const timeoutId = setTimeout(() => {
+      if (!cancelled) setYearDashboardLoading(false);
+    }, 10000);
     setYearDashboardLoading(true);
     getRecordsByYear(selectedYear)
-      .then((list) => setYearRecords(Array.isArray(list) ? list : []))
-      .catch(() => setYearRecords([]))
-      .finally(() => setYearDashboardLoading(false));
-  }, [view, selectedYear]);
+      .then((list) => {
+        if (!cancelled) setYearRecords(Array.isArray(list) ? list : []);
+      })
+      .catch(() => {
+        if (!cancelled) setYearRecords([]);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          clearTimeout(timeoutId);
+          setYearDashboardLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [token, view, selectedYear]);
 
   const yearStats = useMemo(() => {
     const byMonth = {};
